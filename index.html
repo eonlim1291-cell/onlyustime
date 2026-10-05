@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>一起有空</title>
+<meta name="theme-color" content="#2F6B3A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="一起有空">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F5F0; --surface:#FFFFFF; --ink:#1B2A1F; --muted:#5F6E63; --line:#D9E0D6;
+  --free:#A3CC63; --free-ink:#20380C; --soft:#E7EFDD; --accent:#2F6B3A; --on-accent:#FFFFFF; --danger:#B3402F; --busy:#E6EAE4;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#111612; --surface:#1A211B; --ink:#E5ECE4; --muted:#94A296; --line:#2D372F;
+    --free:#78A83E; --free-ink:#0E1C05; --soft:#223020; --accent:#93CF6E; --on-accent:#0E1C05; --danger:#E07563; --busy:#232B24;
+  }
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:clamp(2.4rem,9vw,3.6rem);font-weight:900;letter-spacing:-.02em;line-height:1;margin:8px 0 6px}
+h1 span{display:inline-block;background:var(--free);color:var(--free-ink);padding:0 .12em;border-radius:6px}
+.lede{color:var(--muted);margin:0 0 18px;max-width:36em}
+h2{font-size:1.15rem;margin:28px 0 10px;font-weight:700}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 14px;font-weight:500}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--danger)}
+.btn.sm{padding:6px 10px;font-size:.85rem}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.groupbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.groupbar .code{font-weight:900;font-size:1.2rem;letter-spacing:.12em;font-variant-numeric:tabular-nums}
+.groupbar .lbl{color:var(--muted);font-size:.85rem}
+.live{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.live.on{background:#3FA34D}
+input[type=text]{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface);min-width:0}
+.upload{display:flex;flex-direction:column;gap:6px;border:2px dashed var(--line);border-radius:16px;padding:18px;background:var(--surface);text-align:center;cursor:pointer}
+.upload.drag{border-color:var(--accent);background:var(--soft)}
+.upload strong{font-size:1.05rem}
+.upload small,.note{color:var(--muted);font-size:.85rem}
+.banner{background:var(--soft);border-radius:12px;padding:10px 14px;font-size:.88rem;margin-bottom:14px}
+.friends{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+.friend{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.friend .dot{width:14px;height:14px;border-radius:50%;flex:none}
+.friend .info{flex:1;min-width:0}
+.friend .name{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.friend .meta{font-size:.8rem;color:var(--muted)}
+.friend input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.controls{display:flex;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:.9rem}
+.controls label{display:flex;align-items:center;gap:6px}
+.controls select{border:1px solid var(--line);border-radius:8px;padding:4px 6px;background:var(--bg)}
+.gridbox{overflow-x:auto;margin-top:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:420px;table-layout:fixed}
+th,td{border-bottom:1px solid var(--line);border-right:1px solid var(--line);padding:0;text-align:center}
+th{font-size:.78rem;font-weight:500;color:var(--muted);padding:6px 0;background:var(--surface)}
+th:first-child,td.t{width:44px;font-size:.7rem;color:var(--muted);font-variant-numeric:tabular-nums}
+td.c button{all:unset;display:flex;width:100%;min-height:38px;align-items:center;justify-content:center;flex-wrap:wrap;gap:2px;cursor:pointer;font-size:.62rem;line-height:1.1;padding:2px;box-sizing:border-box}
+td.c button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+td.c.allfree{background:var(--free)}
+td.c.allfree button::after{content:"✓";color:var(--free-ink);font-weight:700;font-size:.8rem}
+td.c.part{background:var(--soft)}
+td.c.none{background:var(--busy)}
+td.c.sel{box-shadow:inset 0 0 0 2px var(--ink)}
+.bd{width:7px;height:7px;border-radius:50%}
+td.c.ed.busy{background:var(--free)}
+td.c.ed.busy button{color:var(--free-ink);font-weight:500}
+.detail{margin-top:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:.9rem}
+.blocks{display:flex;flex-direction:column;gap:6px}
+.block{display:flex;align-items:baseline;gap:12px;background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--free);border-radius:10px;padding:10px 12px}
+.block .d{font-weight:900;min-width:2.6em}
+.block .tm{font-variant-numeric:tabular-nums;font-weight:500}
+.block .len{margin-left:auto;color:var(--muted);font-size:.85rem;white-space:nowrap}
+.block .who{font-size:.8rem;color:var(--muted)}
+.empty{color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:16px;text-align:center}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin-top:8px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px;border:1px solid var(--line)}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.sheet.open{display:flex}
+.sheet .panel{background:var(--bg);width:100%;max-width:860px;max-height:92%;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px))}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:.9rem;display:none;z-index:20;max-width:90%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>一起<span>有空</span>？</h1>
+  <p class="lede">上传大家的课程时间表截图，自动找出所有人都没课的时段。</p>
+
+  <div class="banner" id="localBanner" hidden>还没设置 Firebase，现在是本机模式：数据只存在这台手机里。</div>
+
+  <!-- 未加入小组 -->
+  <section id="joinView" class="card" hidden>
+    <h2 style="margin-top:0">先建一个小组</h2>
+    <p class="note" style="margin-top:0">小组里的人共享同一份时间表。把小组码或链接发给朋友，大家打开就能一起看。</p>
+    <div class="row"><button class="btn primary" id="createBtn">创建新小组</button></div>
+    <div class="row" style="margin-top:12px">
+      <input type="text" id="joinInput" placeholder="输入小组码" maxlength="8" style="flex:1;text-transform:uppercase" autocapitalize="characters">
+      <button class="btn" id="joinBtn">加入</button>
+    </div>
+  </section>
+
+  <!-- 主界面 -->
+  <section id="mainView" hidden>
+    <div class="groupbar card" id="groupBar" hidden>
+      <span class="live" id="live"></span>
+      <span><span class="lbl">小组码</span> <span class="code" id="codeText"></span></span>
+      <span style="flex:1"></span>
+      <button class="btn sm" id="shareBtn">邀请朋友</button>
+      <button class="btn sm ghost" id="leaveBtn">换小组</button>
+    </div>
+
+    <label class="upload" id="drop">
+      <strong>＋ 上传时间表截图</strong>
+      <small>可一次选多张，每张算一位朋友。识别在手机里完成，不会上传图片。</small>
+      <input id="file" type="file" accept="image/*" multiple hidden>
+    </label>
+    <div class="row" style="margin-top:10px"><button class="btn ghost" id="manualBtn">手动添加（点格子录入）</button></div>
+
+    <div class="friends" id="friends"></div>
+
+    <section id="result" hidden>
+      <h2>空闲时间对比</h2>
+      <div class="controls">
+        <label>从 <select id="from"></select></label>
+        <label>到 <select id="to"></select></label>
+        <label>至少 <select id="minLen"><option value="1">1 小时</option><option value="2">2 小时</option><option value="3">3 小时</option></select></label>
+        <label><input type="checkbox" id="weekend"> 含周末</label>
+      </div>
+      <div class="gridbox"><table id="grid"></table></div>
+      <div class="legend">
+        <span><i style="background:var(--free)"></i>全员有空</span>
+        <span><i style="background:var(--soft)"></i>部分有课（圆点＝谁有课）</span>
+        <span><i style="background:var(--busy)"></i>全员有课</span>
+      </div>
+      <div class="detail" id="detail">点格子查看谁有空、谁有课。</div>
+      <h2>所有人都有空</h2>
+      <div class="blocks" id="freeList"></div>
+      <h2>只差一个人</h2>
+      <div class="blocks" id="nearList"></div>
+    </section>
+  </section>
+</div>
+
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="panel">
+    <div class="row" style="margin-bottom:10px">
+      <h2 id="sheetTitle" style="margin:0;flex:1">核对时间表</h2>
+      <button class="btn primary" id="doneBtn">保存</button>
+    </div>
+    <div class="row"><input type="text" id="nameInput" placeholder="名字" maxlength="30" style="flex:1"></div>
+    <p class="note">绿色＝有课。点格子切换。如果整体对错了一行，用下面的按钮整体移动。</p>
+    <div class="row">
+      <button class="btn sm" id="upBtn">整体提早 1 小时</button>
+      <button class="btn sm" id="downBtn">整体推迟 1 小时</button>
+    </div>
+    <div class="gridbox"><table id="edGrid"></table></div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn ghost" id="cancelBtn">取消</button>
+      <span style="flex:1"></span>
+      <button class="btn danger ghost" id="delBtn">删除</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+/* ====== 1. 把 Firebase 控制台里复制的 firebaseConfig 粘贴到这里 ====== */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyC54OX-KoZA9QjY-zweQQDiPqhIoOVmvYI",
+  authDomain: "freetimeforonlyus.firebaseapp.com",
+  projectId: "freetimeforonlyus",
+  storageBucket: "freetimeforonlyus.firebasestorage.app",
+  messagingSenderId: "1048250893149",
+  appId: "1:1048250893149:web:de5cab89510d29244d1eb4",
+  measurementId: "G-NZJ2SMRYBZ"
+};
+/* ================================================================ */
+
+const DAYS=["一","二","三","四","五","六","日"];
+const H0=7,H1=22;
+const COLORS=["#3B7DD8","#D9534F","#E39B20","#8E5CC9","#1E9C8E","#C2477F","#6B8E23","#7A6A58","#2F4F9E","#D2691E"];
+const $=s=>document.querySelector(s);
+const pad=h=>String(h).padStart(2,"0")+":00";
+const uid=()=>Math.random().toString(36).slice(2,10);
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+function toast(t){const el=$("#toast");el.textContent=t;el.style.display="block";clearTimeout(toast._t);toast._t=setTimeout(()=>el.style.display="none",3200)}
+
+const view=Object.assign({from:8,to:18,minLen:1,weekend:false},LS.get("yq-view",{}));
+let hidden=new Set(LS.get("yq-hidden",[]));
+let members=[]; let selCell=null; let editing=null; let store=null;
+
+/* ---------------- 数据层 ---------------- */
+const useFirebase=!String(FIREBASE_CONFIG.apiKey).startsWith("YOUR");
+let fb=null;
+
+function localStore(){
+  const load=()=>LS.get("yq-local",[]);
+  let cb=null;
+  return{
+    live:false,
+    subscribe(f){cb=f;f(load())},
+    async save(m){const l=load().filter(x=>x.id!==m.id);l.push(m);LS.set("yq-local",l);cb&&cb(l)},
+    async remove(id){const l=load().filter(x=>x.id!==id);LS.set("yq-local",l);cb&&cb(l)},
+    stop(){}
+  };
+}
+async function firebaseStore(code){
+  if(!fb){
+    const app=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
+    const fs=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+    const a=app.initializeApp(FIREBASE_CONFIG);
+    fb={fs,db:fs.initializeFirestore(a,{localCache:fs.persistentLocalCache()})};
+  }
+  const {fs,db}=fb; const col=fs.collection(db,"groups",code,"members");
+  let unsub=null;
+  const s={
+    live:false,
+    subscribe(f){unsub=fs.onSnapshot(col,{includeMetadataChanges:true},snap=>{
+      s.live=!snap.metadata.fromCache; setLive(s.live);
+      f(snap.docs.map(d=>Object.assign({id:d.id},d.data())));
+    },err=>{toast("同步出错："+(err.code||"请检查 Firebase 设置"));setLive(false)})},
+    async save(m){const {id,...data}=m;data.updatedAt=Date.now();await fs.setDoc(fs.doc(col,id),data)},
+    async remove(id){await fs.deleteDoc(fs.doc(col,id))},
+    stop(){unsub&&unsub()}
+  };
+  return s;
+}
+function setLive(on){$("#live").classList.toggle("on",on);$("#live").title=on?"已同步":"离线 / 连接中"}
+
+/* ---------------- 小组 ---------------- */
+const CODE_CHARS="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+const newCode=()=>Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>CODE_CHARS[b%CODE_CHARS.length]).join("");
+const cleanCode=s=>String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8);
+
+async function enterGroup(code){
+  store&&store.stop();
+  if(useFirebase){
+    LS.set("yq-group",code);
+    history.replaceState(null,"","?g="+code);
+    $("#codeText").textContent=code;$("#groupBar").hidden=false;
+    try{store=await firebaseStore(code)}catch(e){toast("连不上 Firebase，检查网络或设置");return}
+  }else{store=localStore()}
+  $("#joinView").hidden=true;$("#mainView").hidden=false;
+  store.subscribe(list=>{members=list.sort((a,b)=>String(a.name).localeCompare(String(b.name),"zh"));render()});
+}
+$("#createBtn").onclick=()=>enterGroup(newCode());
+$("#joinBtn").onclick=()=>{const c=cleanCode($("#joinInput").value);if(c.length<4){toast("小组码不对");return}enterGroup(c)};
+$("#joinInput").onkeydown=e=>{if(e.key==="Enter")$("#joinBtn").click()};
+$("#leaveBtn").onclick=()=>{store&&store.stop();LS.set("yq-group",null);history.replaceState(null,"",location.pathname);members=[];$("#mainView").hidden=true;$("#joinView").hidden=false;$("#joinInput").value=""};
+$("#shareBtn").onclick=async()=>{
+  const code=LS.get("yq-group","");const url=location.origin+location.pathname+"?g="+code;
+  const text=`来「一起有空」加我们的小组，上传你的时间表：${url}（小组码 ${code}）`;
+  if(navigator.share){try{await navigator.share({title:"一起有空",text,url});return}catch(e){if(e.name==="AbortError")return}}
+  try{await navigator.clipboard.writeText(text);toast("邀请链接已复制")}catch(e){prompt("复制这段发给朋友：",text)}
+};
+
+/* ---------------- 颜色识别 ---------------- */
+function loadImg(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file);const i=new Image();i.onload=()=>{res(i)};i.onerror=()=>rej(new Error("图片打不开"));i.src=u})}
+function findLines(counts,gap){
+  let max=0;for(const c of counts)if(c>max)max=c;
+  if(!max)return[];
+  const thr=max*0.55,out=[];let g=[];
+  for(let i=0;i<counts.length;i++){
+    if(counts[i]>=thr){if(g.length&&i-g[g.length-1]>gap){out.push(g.reduce((a,b)=>a+b)/g.length);g=[]}g.push(i)}
+  }
+  if(g.length)out.push(g.reduce((a,b)=>a+b)/g.length);
+  return out;
+}
+async function detect(file){
+  const img=await loadImg(file);
+  const W=1600,s=W/img.naturalWidth,w=W,h=Math.round(img.naturalHeight*s);
+  const cv=document.createElement("canvas");cv.width=w;cv.height=h;
+  const cx=cv.getContext("2d",{willReadFrequently:true});
+  cx.imageSmoothingEnabled=true;cx.fillStyle="#fff";cx.fillRect(0,0,w,h);cx.drawImage(img,0,0,w,h);
+  URL.revokeObjectURL(img.src);
+  const px=cx.getImageData(0,0,w,h).data;
+  const colC=new Uint32Array(w),rowC=new Uint32Array(h),colored=new Uint8Array(w*h);
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const i=(y*w+x)*4,r=px[i],g=px[i+1],b=px[i+2];
+    const lum=.299*r+.587*g+.114*b,sat=Math.max(r,g,b)-Math.min(r,g,b);
+    if(lum<215&&sat<40){colC[x]++;rowC[y]++}
+    if(sat>45&&lum>60&&lum<245)colored[y*w+x]=1;
+  }
+  const gap=Math.max(3,Math.round(w/300));
+  const xs=findLines(colC,gap),ys=findLines(rowC,gap);
+  if(xs.length<3||ys.length<3)throw new Error("找不到表格线");
+  const nDays=Math.min(7,xs.length-2),busy={};
+  for(let ri=1;ri<ys.length-1;ri++){
+    const hour=H0+ri-1;if(hour>=H1)break;
+    for(let ci=1;ci<=nDays;ci++){
+      const x0=xs[ci],x1=xs[ci+1],y0=ys[ri],y1=ys[ri+1],ix=(x1-x0)*.12,iy=(y1-y0)*.12;
+      let n=0,t=0;
+      for(let y=Math.floor(y0+iy);y<y1-iy;y+=2)for(let x=Math.floor(x0+ix);x<x1-ix;x+=2){t++;n+=colored[y*w+x]}
+      if(t&&n/t>.35)busy[(ci-1)+"-"+hour]="有课";
+    }
+  }
+  return busy;
+}
+async function handleFiles(files){
+  const list=[...files].filter(f=>/^image\//.test(f.type));
+  for(const f of list){
+    try{
+      const busy=await detect(f);
+      const n=Object.keys(busy).length;
+      openEditor({id:uid(),name:"",color:nextColor(),busy,isNew:true},n?`识别到 ${n} 小时有课，请核对后保存`:"没识别到课，可以手动点格子");
+      await waitClose();
+    }catch(e){toast(`${f.name}：${e.message}，可以改用手动添加`)}
+  }
+}
+let closeResolver=null;const waitClose=()=>new Promise(r=>closeResolver=r);
+
+/* ---------------- 计算 ---------------- */
+const active=()=>members.filter(m=>!hidden.has(m.id));
+const days=()=>view.weekend?[0,1,2,3,4,5,6]:[0,1,2,3,4];
+const busyAt=(d,h)=>active().filter(m=>m.busy&&m.busy[d+"-"+h]);
+function nextColor(){const used=new Set(members.map(m=>m.color));return COLORS.find(c=>!used.has(c))||COLORS[members.length%COLORS.length]}
+function blocks(){
+  const fr=active(),out=[],near=[];
+  for(const d of days()){
+    let s=null;
+    for(let h=view.from;h<=view.to;h++){
+      const ok=h<view.to&&busyAt(d,h).length===0;
+      if(ok&&s===null)s=h;
+      if(!ok&&s!==null){if(h-s>=view.minLen)out.push({d,s,e:h});s=null}
+    }
+    let ns=null,who=null;
+    for(let h=view.from;h<=view.to;h++){
+      const b=h<view.to?busyAt(d,h):[];
+      const one=fr.length>1&&b.length===1?b[0]:null;
+      if(one&&ns!==null&&one.id===who.id)continue;
+      if(ns!==null){if(h-ns>=view.minLen)near.push({d,s:ns,e:h,who});ns=null;who=null}
+      if(one){ns=h;who=one}
+    }
+  }
+  return{out,near};
+}
+
+/* ---------------- 渲染 ---------------- */
+function render(){
+  const box=$("#friends");box.innerHTML="";
+  for(const m of members){
+    const n=Object.keys(m.busy||{}).length;
+    const el=document.createElement("div");el.className="friend";
+    el.innerHTML=`<input type="checkbox" aria-label="参与对比"><span class="dot"></span><div class="info"><div class="name"></div><div class="meta"></div></div><button class="btn ghost sm">编辑</button>`;
+    const cb=el.querySelector("input");cb.checked=!hidden.has(m.id);
+    cb.onchange=()=>{cb.checked?hidden.delete(m.id):hidden.add(m.id);LS.set("yq-hidden",[...hidden]);renderCompare()};
+    el.querySelector(".dot").style.background=m.color;
+    el.querySelector(".name").textContent=m.name||"未命名";
+    el.querySelector(".meta").textContent=`每周 ${n} 小时有课`;
+    el.querySelector("button").onclick=()=>openEditor(JSON.parse(JSON.stringify(m)));
+    box.appendChild(el);
+  }
+  $("#result").hidden=members.length===0;
+  if(members.length)renderCompare();
+}
+function fillSelects(){
+  const f=$("#from"),t=$("#to");
+  for(let h=H0;h<H1;h++)f.add(new Option(pad(h),h));
+  for(let h=H0+1;h<=H1;h++)t.add(new Option(pad(h),h));
+  f.value=view.from;t.value=view.to;$("#minLen").value=view.minLen;$("#weekend").checked=view.weekend;
+  const upd=()=>{LS.set("yq-view",view);renderCompare()};
+  f.onchange=()=>{view.from=+f.value;if(view.to<=view.from){view.to=view.from+1;t.value=view.to}upd()};
+  t.onchange=()=>{view.to=+t.value;if(view.to<=view.from){view.from=view.to-1;f.value=view.from}upd()};
+  $("#minLen").onchange=e=>{view.minLen=+e.target.value;upd()};
+  $("#weekend").onchange=e=>{view.weekend=e.target.checked;upd()};
+}
+function renderCompare(){
+  const g=$("#grid"),fr=active(),ds=days();
+  let html="<thead><tr><th></th>"+ds.map(d=>`<th>周${DAYS[d]}</th>`).join("")+"</tr></thead><tbody>";
+  for(let h=view.from;h<view.to;h++){
+    html+=`<tr><td class="t">${pad(h)}</td>`;
+    for(const d of ds){
+      const b=busyAt(d,h);
+      const cls=!fr.length?"part":!b.length?"allfree":b.length===fr.length?"none":"part";
+      const sel=selCell&&selCell.d===d&&selCell.h===h?" sel":"";
+      const dots=cls==="allfree"?"":b.map(m=>`<span class="bd" style="background:${m.color}"></span>`).join("");
+      html+=`<td class="c ${cls}${sel}"><button data-d="${d}" data-h="${h}" aria-label="周${DAYS[d]} ${pad(h)}，${b.length} 人有课">${dots}</button></td>`;
+    }
+    html+="</tr>";
+  }
+  g.innerHTML=html+"</tbody>";
+  g.querySelectorAll("button").forEach(b=>b.onclick=()=>{selCell={d:+b.dataset.d,h:+b.dataset.h};renderCompare()});
+  renderDetail();
+  const{out,near}=blocks();
+  const fl=$("#freeList");fl.innerHTML="";
+  if(!fr.length)fl.innerHTML=`<div class="empty">勾选至少一位朋友参与对比。</div>`;
+  else if(!out.length)fl.innerHTML=`<div class="empty">这个时间范围里没有大家都有空的时段，试试放宽时间或缩短时长。</div>`;
+  out.forEach(x=>fl.appendChild(blockEl(x,false)));
+  const nl=$("#nearList");nl.innerHTML="";
+  if(fr.length<2)nl.innerHTML=`<div class="empty">至少两位朋友才有这项。</div>`;
+  else if(!near.length)nl.innerHTML=`<div class="empty">没有只差一个人的时段。</div>`;
+  near.forEach(x=>nl.appendChild(blockEl(x,true)));
+}
+function blockEl(x,isNear){
+  const el=document.createElement("div");el.className="block";
+  if(isNear)el.style.borderLeftColor=x.who.color;
+  el.innerHTML=`<span class="d">周${DAYS[x.d]}</span><span><span class="tm">${pad(x.s)}–${pad(x.e)}</span>${isNear?'<br><span class="who"></span>':""}</span><span class="len">${x.e-x.s} 小时</span>`;
+  if(isNear)el.querySelector(".who").textContent=(x.who.name||"未命名")+" 有课";
+  return el;
+}
+function renderDetail(){
+  const el=$("#detail");
+  if(!selCell){el.textContent="点格子查看谁有空、谁有课。";return}
+  const{d,h}=selCell,fr=active();
+  const free=fr.filter(m=>!(m.busy||{})[d+"-"+h]),busy=fr.filter(m=>(m.busy||{})[d+"-"+h]);
+  el.innerHTML="";
+  const t=document.createElement("b");t.textContent=`周${DAYS[d]} ${pad(h)}–${pad(h+1)}`;el.appendChild(t);
+  const p1=document.createElement("div");p1.textContent="有空："+(free.map(m=>m.name||"未命名").join("、")||"没人");el.appendChild(p1);
+  if(busy.length){const p2=document.createElement("div");p2.textContent="有课："+busy.map(m=>m.name||"未命名").join("、");el.appendChild(p2)}
+}
+
+/* ---------------- 编辑器 ---------------- */
+function openEditor(m,msg){
+  editing=m;$("#nameInput").value=m.name||"";
+  $("#sheetTitle").textContent=m.isNew?"核对时间表":"编辑时间表";
+  $("#delBtn").hidden=!!m.isNew;
+  renderEditor();$("#sheet").classList.add("open");
+  if(msg)toast(msg);
+  if(m.isNew)setTimeout(()=>$("#nameInput").focus(),50);
+}
+function renderEditor(){
+  const m=editing;m.busy=m.busy||{};
+  let html="<thead><tr><th></th>"+DAYS.map(d=>`<th>${d}</th>`).join("")+"</tr></thead><tbody>";
+  for(let h=H0;h<H1;h++){
+    html+=`<tr><td class="t">${pad(h)}</td>`;
+    for(let d=0;d<7;d++){const b=m.busy[d+"-"+h];
+      html+=`<td class="c ed${b?" busy":""}"><button data-k="${d}-${h}" aria-pressed="${!!b}" aria-label="周${DAYS[d]} ${pad(h)}">${b?"课":""}</button></td>`}
+    html+="</tr>";
+  }
+  $("#edGrid").innerHTML=html+"</tbody>";
+  $("#edGrid").querySelectorAll("button").forEach(b=>b.onclick=()=>{const k=b.dataset.k;m.busy[k]?delete m.busy[k]:m.busy[k]="有课";renderEditor()});
+}
+function shift(dh){
+  const nb={};for(const[k,v]of Object.entries(editing.busy)){const[d,h]=k.split("-").map(Number);const nh=h+dh;if(nh>=H0&&nh<H1)nb[d+"-"+nh]=v}
+  editing.busy=nb;renderEditor();
+}
+$("#upBtn").onclick=()=>shift(-1);$("#downBtn").onclick=()=>shift(1);
+function closeSheet(){$("#sheet").classList.remove("open");editing=null;if(closeResolver){closeResolver();closeResolver=null}}
+$("#doneBtn").onclick=async()=>{
+  const m=editing;if(!m)return;
+  const name=$("#nameInput").value.trim();
+  if(!name){toast("请填一个名字");$("#nameInput").focus();return}
+  const data={id:m.id,name,color:m.color,busy:m.busy};
+  closeSheet();
+  try{await store.save(data);toast(`已保存 ${name}`)}catch(e){toast("保存失败："+(e.code||e.message))}
+};
+$("#cancelBtn").onclick=closeSheet;
+$("#delBtn").onclick=async()=>{const m=editing;if(m&&confirm(`删除 ${m.name}？小组里所有人都会看不到。`)){closeSheet();selCell=null;try{await store.remove(m.id)}catch(e){toast("删除失败")}}};
+$("#manualBtn").onclick=()=>openEditor({id:uid(),name:"",color:nextColor(),busy:{},isNew:true});
+
+/* ---------------- 上传 ---------------- */
+$("#file").onchange=e=>{const f=[...e.target.files];e.target.value="";handleFiles(f)};
+const drop=$("#drop");
+["dragenter","dragover"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("drag")}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("drag")}));
+drop.addEventListener("drop",e=>handleFiles(e.dataTransfer.files));
+
+/* ---------------- 启动 ---------------- */
+fillSelects();
+if(!useFirebase){$("#localBanner").hidden=false;enterGroup("LOCAL")}
+else{
+  const fromUrl=cleanCode(new URLSearchParams(location.search).get("g"));
+  const saved=LS.get("yq-group",null);
+  if(fromUrl)enterGroup(fromUrl);else if(saved)enterGroup(saved);else $("#joinView").hidden=false;
+}
+if("serviceWorker"in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
