@@ -690,7 +690,7 @@ async function memberMenu(m){
   if(v==="edit")openEditor(JSON.parse(JSON.stringify(m)));
   if(v==="toggle"){on?hidden.add(m.id):hidden.delete(m.id);LS.set("yq-hidden",[...hidden]);render()}
   if(v==="del"){
-    const ok=await actionMenu(`删除 ${nameOf(m)} 的课表？小组里所有人都会看不到。`,[{label:"删除",value:true,cls:"danger"}]);
+    const ok=await actionMenu(`删除 ${nameOf(m)} 的课表？`,[{label:"删除",value:true,cls:"danger"}]);
     if(ok){selCell=null;try{await store.remove(m.id)}catch(e){toast("删除失败")}}
   }
 }
