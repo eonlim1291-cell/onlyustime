@@ -51,7 +51,10 @@ svg{display:block}
 /* 小组信息 */
 .meta{display:flex;align-items:center;gap:6px;padding:12px 16px 0;font-size:13px;color:var(--muted)}
 .meta b{color:var(--text);font-weight:600;letter-spacing:.08em}
-.live{width:6px;height:6px;border-radius:50%;background:var(--line)}
+.gbtn{display:inline-flex;align-items:center;gap:6px;min-width:0;padding:6px 6px 6px 0;margin:-6px 0;color:inherit}
+.gbtn b{max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gbtn svg{flex:none;width:12px;height:12px;color:var(--muted)}
+.live{flex:none;width:6px;height:6px;border-radius:50%;background:var(--line)}
 .live.on{background:var(--ink)}
 
 /* 头像行 */
@@ -108,6 +111,10 @@ table.fade td.c{animation:fade .35s ease both}
 .detail .when{font-weight:600;color:var(--ink);margin-bottom:2px}
 .detail .row{color:var(--text)}
 .detail .muted{color:var(--muted)}
+.detail .course{color:var(--muted)}
+.detail .bl{padding-left:14px}
+td.c.ed button span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px;font-size:10px}
+.course-in{margin:0 0 10px}
 
 /* 列表 */
 .section-h{display:flex;align-items:baseline;justify-content:space-between;padding:16px 16px 6px}
@@ -135,6 +142,14 @@ table.fade td.c{animation:fade .35s ease both}
 .btn.primary{background:var(--ink);color:var(--bg)}
 .btn.secondary{background:var(--soft);color:var(--text)}
 .btn:disabled{opacity:.4}
+.mygroups{margin:0 0 4px;text-align:left}
+.mygroups h4{margin:0 0 8px;font-size:12px;font-weight:600;color:var(--muted)}
+.gitem{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;height:46px;padding:0 14px;margin-bottom:8px;border-radius:8px;background:var(--soft);color:var(--text);font-size:14px;font-weight:600;transition:transform .12s}
+.gitem:active{transform:scale(.98)}
+.gitem .gn{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gitem .gc{flex:none;font-size:12px;font-weight:600;letter-spacing:.08em;color:var(--muted)}
+.gitem.cur{background:var(--ink);color:var(--bg)}
+.gitem.cur .gc{color:inherit;opacity:.7}
 .or{display:flex;align-items:center;gap:16px;color:var(--muted);font-size:13px;font-weight:600;margin:20px 0}
 .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
 input[type=text]{width:100%;height:42px;border:1px solid var(--line);border-radius:8px;background:var(--faint);padding:0 12px;font-size:14px;margin-bottom:10px}
@@ -153,7 +168,7 @@ input[type=text]:focus{border-color:var(--muted);outline:none}
 .sheet-h button{font-size:15px;min-width:52px;text-align:left}
 .sheet-h button.done{font-weight:700;color:var(--ink);text-align:right}
 .sheet-body{padding:12px 16px 20px}
-.menu{background:var(--sheet);width:calc(100% - 16px);max-width:420px;border-radius:14px;margin:0 8px calc(8px + env(safe-area-inset-bottom,0px));overflow:hidden;animation:up .25s cubic-bezier(.2,.9,.3,1)}
+.menu{background:var(--sheet);width:calc(100% - 16px);max-width:420px;max-height:80vh;border-radius:14px;margin:0 8px calc(8px + env(safe-area-inset-bottom,0px));overflow-x:hidden;overflow-y:auto;animation:up .25s cubic-bezier(.2,.9,.3,1)}
 .menu .ttl{padding:16px;text-align:center;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line)}
 .menu button{display:block;width:100%;height:50px;font-size:15px;border-bottom:1px solid var(--line);color:var(--text)}
 .menu button:last-child{border-bottom:0}
@@ -213,14 +228,16 @@ td.c.ed.busy button{color:var(--bg)}
     <div class="logo"><img class="logo-svg" src="logo.png" alt="Time Table">
 </div>
     <p>和朋友共享课表，一眼看出大家什么时候都有空。</p>
+    <div class="mygroups" id="myGroups" hidden><h4>我的小组</h4><div id="myGroupList"></div><div class="or">或</div></div>
     <button class="btn primary" id="createBtn">创建新小组</button>
     <div class="or">或</div>
     <input type="text" id="joinInput" placeholder="输入朋友给的小组码" maxlength="8" autocapitalize="characters" style="text-transform:uppercase">
     <button class="btn secondary" id="joinBtn">加入小组</button>
+    <button class="btn secondary" id="joinBack" type="button" style="margin-top:20px" hidden>返回当前小组</button>
   </section>
 
   <section id="mainView" hidden>
-    <div class="meta" id="metaRow" hidden><span class="live" id="live"></span><span>小组</span><b id="codeText"></b><span id="liveText">· 连接中</span></div>
+    <div class="meta" id="metaRow" hidden><span class="live" id="live"></span><button class="gbtn" id="groupBtn" type="button" aria-label="切换小组"><span>小组</span><b id="codeText"></b><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m3 4.5 3 3 3-3"/></svg></button><span id="liveText">· 连接中</span></div>
     <div class="stories" id="stories"></div>
     <div class="hint" id="hint"><span class="ht">点头像可以编辑，或暂时不算入对比</span><button class="chip" id="allOn" type="button">全部算入</button><button class="chip" id="allOff" type="button">全部不算入</button></div>
 
@@ -286,6 +303,7 @@ td.c.ed.busy button{color:var(--bg)}
       <input type="file" id="avaFile" accept="image/*" hidden>
       <input type="text" id="nameInput" placeholder="名字" maxlength="30">
       <p class="note">有字的格子＝有事不得空，点格子切换。整体错了一行的话，用下面的按钮移动。</p>
+      <input type="text" id="courseInput" class="course-in" placeholder="课程名（可选）：填了再点格子，就会写入这门课" maxlength="20">
       <div class="ed-tools">
         <button class="btn secondary" id="upBtn">提早 1 小时</button>
         <button class="btn secondary" id="downBtn">推迟 1 小时</button>
@@ -324,6 +342,7 @@ const nameOf=m=>m.name||"未命名";
 
 const view=Object.assign({from:8,to:18,minLen:1,weekend:false,tab:"grid",label:"课"},LS.get("yq-view",{}));
 const LBL=()=>view.label||"课";
+const courseOf=(m,d,h)=>{const v=(m.busy||{})[d+"-"+h];return v&&v!=="有课"?String(v):""};
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]);
 let hidden=new Set(LS.get("yq-hidden",[]));
 let members=[],selCell=null,editing=null,store=null,lastKey="";
@@ -375,42 +394,102 @@ function setLive(on){$("#live").classList.toggle("on",on);$("#liveText").textCon
 const CODE_CHARS="ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const newCode=()=>Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>CODE_CHARS[b%CODE_CHARS.length]).join("");
 const cleanCode=s=>String(s||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,8);
+/* 我的小组：把进入过的小组记在本机，之后点一下就能切换，不用再输入小组码 */
+const getGroups=()=>{const l=LS.get("yq-groups",[]);return Array.isArray(l)?l.filter(g=>g&&g.code):[]};
+const putGroups=l=>LS.set("yq-groups",l.slice(0,30));
+const curCode=()=>LS.get("yq-group","")||"";
+const groupTitle=code=>{const g=getGroups().find(x=>x.code===code);return g&&g.name?g.name:code};
+const groupLabel=g=>g.name?`${g.name}（${g.code}）`:g.code;
+function touchGroup(code){
+  const l=getGroups(),i=l.findIndex(g=>g.code===code),g=i>=0?l.splice(i,1)[0]:{code,name:""};
+  g.t=Date.now();l.unshift(g);putGroups(l);
+}
+const setHeader=on=>["#shareBtn","#moreBtn","#addTop","#metaRow"].forEach(q=>$(q).hidden=!on);
 async function enterGroup(code){
-  store&&store.stop();
+  store&&store.stop();members=[];selCell=null;
   if(useFirebase){
-    LS.set("yq-group",code);history.replaceState(null,"","?g="+code);
-    $("#codeText").textContent=code;$("#metaRow").hidden=false;$("#shareBtn").hidden=false;$("#moreBtn").hidden=false;
+    LS.set("yq-group",code);touchGroup(code);history.replaceState(null,"","?g="+code);
+    $("#codeText").textContent=groupTitle(code);$("#metaRow").hidden=false;$("#shareBtn").hidden=false;$("#moreBtn").hidden=false;$("#live").classList.remove("on");$("#liveText").textContent="· 连接中";
     try{store=await firebaseStore(code)}catch(e){toast("连不上 Firebase，请检查网络或设置");return}
   }else store=localStore();
   $("#joinView").hidden=true;$("#mainView").hidden=false;$("#addTop").hidden=false;$("#moreBtn").hidden=false;
+  render();
   store.subscribe(list=>{members=list.sort((a,b)=>String(a.name).localeCompare(String(b.name),"zh"));render()});
 }
-function leaveGroup(){
-  store&&store.stop();LS.set("yq-group",null);history.replaceState(null,"",location.pathname);members=[];
+function renderMyGroups(active){
+  const l=getGroups(),box=$("#myGroups"),list=$("#myGroupList");
+  box.hidden=!l.length;list.innerHTML="";
+  for(const g of l){
+    const isCur=active&&g.code===curCode();
+    const b=document.createElement("button");b.type="button";b.className="gitem"+(isCur?" cur":"");
+    const n=document.createElement("span");n.className="gn";n.textContent=g.name||g.code;
+    const c=document.createElement("span");c.className="gc";c.textContent=g.name?g.code:(isCur?"当前":"");
+    b.append(n,c);b.onclick=()=>isCur?$("#joinBack").click():enterGroup(g.code);list.appendChild(b);
+  }
+}
+// 打开"选择小组"页；当前小组的连接保持不动，点"返回"可以直接回去
+function showJoin(){
+  const active=!!store&&!!curCode()&&useFirebase;
   $("#mainView").hidden=true;$("#joinView").hidden=false;$("#joinInput").value="";
-  ["#shareBtn","#moreBtn","#addTop"].forEach(s=>$(s).hidden=true);
+  $("#joinBack").hidden=!active;renderMyGroups(active);setHeader(false);
+}
+$("#joinBack").onclick=()=>{$("#joinView").hidden=true;$("#mainView").hidden=false;setHeader(true)};
+function leaveGroup(){
+  store&&store.stop();store=null;LS.set("yq-group",null);history.replaceState(null,"",location.pathname);members=[];selCell=null;
+  showJoin();
 }
 $("#createBtn").onclick=()=>enterGroup(newCode());
 $("#joinBtn").onclick=()=>{const c=cleanCode($("#joinInput").value);if(c.length<4){toast("小组码不正确");return}enterGroup(c)};
 $("#joinInput").onkeydown=e=>{if(e.key==="Enter")$("#joinBtn").click()};
-async function share(){
-  const code=LS.get("yq-group","");const url=location.origin+location.pathname+"?g="+code;
+async function switchGroup(){
+  const cur=curCode(),l=getGroups();
+  const opts=l.map(g=>({label:(g.code===cur?"✓ ":"")+groupLabel(g),value:"g:"+g.code,cls:g.code===cur?"strong":""}));
+  opts.push({label:"＋ 加入或新建小组",value:"new"});
+  if(l.length)opts.push({label:"管理小组…",value:"manage"});
+  const v=await actionMenu("切换小组",opts);
+  if(!v)return;
+  if(v==="new")showJoin();
+  else if(v==="manage")await manageGroups();
+  else if(v.startsWith("g:")){const c=v.slice(2);if(c!==cur)enterGroup(c)}
+}
+async function manageGroups(){
+  const l=getGroups();if(!l.length)return;
+  const c=await actionMenu("管理哪个小组？",l.map(g=>({label:groupLabel(g),value:g.code})));
+  const g=c&&getGroups().find(x=>x.code===c);if(!g)return;
+  const v=await actionMenu(groupLabel(g),[{label:"重命名",value:"rename"},{label:"复制邀请链接",value:"share"},{label:"从这台设备的列表移除",value:"rm",cls:"danger"}]);
+  if(v==="rename"){
+    const t=await inputMenu("给这个小组起个名字（只有你自己看得到）",g.name||"","例如：周末羽毛球",20,[]);
+    if(t!==null){
+      const l2=getGroups(),x=l2.find(y=>y.code===c);if(x){x.name=t.trim();putGroups(l2)}
+      if(c===curCode())$("#codeText").textContent=groupTitle(c);
+      toast(t.trim()?`已命名为「${t.trim()}」`:"已清除名字");
+    }
+  }
+  if(v==="share")share(c);
+  if(v==="rm"){
+    const ok=await actionMenu(`把「${g.name||g.code}」从列表移除？只影响这台设备，小组里的课表不会被删除，之后输入小组码还能回来。`,[{label:"移除",value:true,cls:"danger"}]);
+    if(ok){putGroups(getGroups().filter(x=>x.code!==c));if(c===curCode())leaveGroup();else toast("已移除")}
+  }
+}
+$("#groupBtn").onclick=switchGroup;
+async function share(code=curCode()){
+  const url=location.origin+location.pathname+"?g="+code;
   const text=`来「Time Table」加入我们的小组，上传你的课表：${url}（小组码 ${code}）`;
   if(navigator.share){try{await navigator.share({title:"Time Table",text,url});return}catch(e){if(e.name==="AbortError")return}}
   try{await navigator.clipboard.writeText(text);toast("邀请链接已复制")}catch(e){prompt("复制这段发给朋友：",text)}
 }
-$("#shareBtn").onclick=share;
+$("#shareBtn").onclick=()=>share();
 $("#moreBtn").onclick=async()=>{
   const opts=[{label:`格子文字：「${LBL()}」`,value:"label",cls:"strong"}];
-  if(useFirebase)opts.push({label:"复制邀请链接",value:"share"},{label:"换一个小组",value:"leave",cls:"danger"});
-  const v=await actionMenu(useFirebase?"小组 "+LS.get("yq-group",""):"设置",opts);
-  if(v==="share")share();if(v==="leave")leaveGroup();
+  if(useFirebase)opts.push({label:"切换小组",value:"switch"},{label:"复制邀请链接",value:"share"});
+  const v=await actionMenu(useFirebase?"小组 "+groupTitle(curCode()):"设置",opts);
+  if(v==="share")share();if(v==="switch")switchGroup();
   if(v==="label"){
     const t=await inputMenu("有事的格子显示什么字？",LBL(),"例如：课、忙、✕",3);
     if(t!==null){view.label=t.trim()||"课";LS.set("yq-view",view);renderCompare();toast(`格子文字已改成「${LBL()}」`)}
   }
 };
-function inputMenu(title,value,ph,max){
+function inputMenu(title,value,ph,max,quicks=["课","忙","✕","●"]){
   return new Promise(res=>{
     const ov=$("#menuOv"),m=$("#menu");m.innerHTML="";
     const t=document.createElement("div");t.className="ttl";t.textContent=title;
@@ -418,8 +497,8 @@ function inputMenu(title,value,ph,max){
     const inp=document.createElement("input");inp.type="text";inp.value=value;inp.placeholder=ph;inp.maxLength=max;inp.style.textAlign="center";inp.style.fontSize="18px";
     wrap.appendChild(inp);
     const quick=document.createElement("div");quick.className="quick";
-    for(const q of ["课","忙","✕","●"]){const c=document.createElement("button");c.className="chip";c.textContent=q;c.onclick=e=>{e.stopPropagation();inp.value=q};quick.appendChild(c)}
-    wrap.appendChild(quick);
+    for(const q of quicks){const c=document.createElement("button");c.className="chip";c.textContent=q;c.onclick=e=>{e.stopPropagation();inp.value=q};quick.appendChild(c)}
+    if(quicks.length)wrap.appendChild(quick);
     const close=v=>{ov.classList.remove("open");ov.onclick=null;res(v)};
     const ok=document.createElement("button");ok.className="strong";ok.textContent="完成";ok.onclick=e=>{e.stopPropagation();close(inp.value)};
     const no=document.createElement("button");no.textContent="取消";no.onclick=e=>{e.stopPropagation();close(null)};
@@ -439,41 +518,88 @@ $("#addTop").onclick=addFlow;
 
 /* ---------- 颜色识别 ---------- */
 function loadImg(file){return new Promise((res,rej)=>{const u=URL.createObjectURL(file);const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error("图片打不开"));i.src=u})}
-function findLines(counts,gap){
-  let max=0;for(const c of counts)if(c>max)max=c;if(!max)return[];
-  const thr=max*0.55,out=[];let g=[];
-  for(let i=0;i<counts.length;i++){if(counts[i]>=thr){if(g.length&&i-g[g.length-1]>gap){out.push(g.reduce((a,b)=>a+b)/g.length);g=[]}g.push(i)}}
-  if(g.length)out.push(g.reduce((a,b)=>a+b)/g.length);return out;
+/* 表格识别：只认"细而长、比两侧明显更暗"的线，所以标题文字、深色背景、手机状态栏、图例都不会被当成表格线 */
+function groupLines(score,thr,gap){
+  const groups=[];let g=[];
+  for(let i=0;i<score.length;i++){
+    if(score[i]>=thr){if(g.length&&i-g[g.length-1]>gap){groups.push(g);g=[]}g.push(i)}
+  }
+  if(g.length)groups.push(g);
+  return groups.map(a=>{let s=0,t=0,pk=a[0];for(const i of a){s+=score[i];t+=score[i]*i;if(score[i]>score[pk])pk=i}return{c:t/s,pk}});
+}
+const median=a=>{if(!a.length)return null;const b=[...a].sort((x,y)=>x-y);return b[b.length>>1]};
+// 在像素里找出课表网格，并判断每个格子是否有颜色（有课）
+function analyzeTable(px,w,h,H0,H1){
+  const N=w*h,lum=new Uint8Array(N);
+  for(let i=0,j=0;j<N;i+=4,j++)lum[j]=(px[i]*299+px[i+1]*587+px[i+2]*114)/1000;
+  const DS=[2,3,5],DROP=40,minRun=Math.round(w*.04),TOL=2;   // 同时试几种"和两侧比较"的距离：线粗细、文字贴不贴线都不敏感
+  const rowS=new Float32Array(h),colS=new Float32Array(w);
+  const rBest=new Int32Array(h),rS=new Uint16Array(h),rE=new Uint16Array(h);       // 每行最长横线的长度/起/止
+  const cBest=new Int32Array(w),cS=new Uint16Array(w),cE=new Uint16Array(w);       // 每列最长竖线的长度/起/止
+  const vLen=new Uint16Array(w),vGap=new Uint8Array(w),vSt=new Uint16Array(w);
+  const endV=(x,y)=>{const len=vLen[x];if(len>=minRun){colS[x]+=len;if(len>cBest[x]){cBest[x]=len;cS[x]=vSt[x];cE[x]=y-vGap[x]}}vLen[x]=0;vGap[x]=0};
+  for(let y=0;y<=h;y++){
+    if(y===h){for(let x=0;x<w;x++)if(vLen[x])endV(x,y);break}
+    let len=0,gap=0,st=0;const o=y*w;
+    const endH=x=>{if(len>=minRun){rowS[y]+=len;if(len>rBest[y]){rBest[y]=len;rS[y]=st;rE[y]=x-gap}}len=0;gap=0};
+    for(let x=0;x<w;x++){
+      const L=lum[o+x];
+      let isH=false,isV=false;
+      if(L<215)for(const d of DS){
+        if(!isH&&y>=d&&y+d<h&&L<lum[o-d*w+x]-DROP&&L<lum[o+d*w+x]-DROP)isH=true;
+        if(!isV&&x>=d&&x+d<w&&L<lum[o+x-d]-DROP&&L<lum[o+x+d]-DROP)isV=true;
+        if(isH&&isV)break;
+      }
+      if(isH){if(!len)st=x;len+=1+gap;gap=0}else if(len&&++gap>TOL)endH(x);
+      if(isV){if(!vLen[x])vSt[x]=y;vLen[x]+=1+vGap[x];vGap[x]=0}else if(vLen[x]&&++vGap[x]>TOL)endV(x,y);
+    }
+    if(len)endH(w);
+  }
+  let rMax=0,cMax=0;for(const v of rowS)if(v>rMax)rMax=v;for(const v of colS)if(v>cMax)cMax=v;
+  const gap=Math.max(4,Math.round(w/250));
+  const xg=cMax>=h*.08?groupLines(colS,cMax*.5,gap):[],yg=rMax>=w*.25?groupLines(rowS,rMax*.5,gap):[];
+  if(xg.length<2||yg.length<2)return{error:"找不到表格线"};
+  // 外边框在深色背景里会看不见：用内部线条的起止位置补上
+  const left=median(yg.map(g=>rS[g.pk])),right=median(yg.map(g=>rE[g.pk]));
+  const top=median(xg.map(g=>cS[g.pk])),bot=median(xg.map(g=>cE[g.pk]));
+  const fix=(arr,lo,hi)=>{
+    let a=arr.filter(v=>v>=lo-gap&&v<=hi+gap);
+    if(!a.some(v=>Math.abs(v-lo)<=gap*1.5))a.push(lo);
+    if(!a.some(v=>Math.abs(v-hi)<=gap*1.5))a.push(hi);
+    return a.sort((p,q)=>p-q)};
+  const xs=fix(xg.map(g=>g.c),left,right),ys=fix(yg.map(g=>g.c),top,bot);
+  // 逐格判断：格内有足够多的"彩色"像素（绿/黄/蓝）就算有课
+  const step=w>1000?2:1,rows=ys.length-2,days=Math.min(7,xs.length-2),busy={},cells=[];
+  for(let ri=1;ri<ys.length-1;ri++){
+    const hour=H0+ri-1;if(hour>=H1)break;
+    for(let ci=1;ci<=days;ci++){
+      const x0=xs[ci],x1=xs[ci+1],y0=ys[ri],y1=ys[ri+1],ix=(x1-x0)*.12,iy=(y1-y0)*.12;
+      let n=0,t=0;
+      for(let y=Math.floor(y0+iy);y<y1-iy;y+=step)for(let x=Math.floor(x0+ix);x<x1-ix;x+=step){
+        const i=(y*w+x)*4,r=px[i],g=px[i+1],b=px[i+2],l=lum[y*w+x],sat=Math.max(r,g,b)-Math.min(r,g,b);
+        t++;if(sat>45&&l>60&&l<245)n++;
+      }
+      if(t&&n/t>.35){busy[(ci-1)+"-"+hour]="有课";cells.push([x0,y0,x1,y1,ci-1,hour])}
+    }
+  }
+  return{xs,ys,w,h,rows,days,busy,cells};
 }
 async function detect(file){
   const img=await loadImg(file);
-  const w=1600,h=Math.round(img.naturalHeight*w/img.naturalWidth);
+  const nw=img.naturalWidth,w=Math.min(1600,nw),h=Math.round(img.naturalHeight*w/nw);   // 不放大，只在过大时缩小
   const cv=document.createElement("canvas");cv.width=w;cv.height=h;
   const cx=cv.getContext("2d",{willReadFrequently:true});
   cx.fillStyle="#fff";cx.fillRect(0,0,w,h);cx.drawImage(img,0,0,w,h);
-  const px=cx.getImageData(0,0,w,h).data;
-  const colC=new Uint32Array(w),rowC=new Uint32Array(h),colored=new Uint8Array(w*h);
-  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-    const i=(y*w+x)*4,r=px[i],g=px[i+1],b=px[i+2];
-    const lum=.299*r+.587*g+.114*b,sat=Math.max(r,g,b)-Math.min(r,g,b);
-    if(lum<215&&sat<40){colC[x]++;rowC[y]++}
-    if(sat>45&&lum>60&&lum<245)colored[y*w+x]=1;
-  }
-  const gap=Math.max(3,Math.round(w/300));
-  const xs=findLines(colC,gap),ys=findLines(rowC,gap);
-  const geo={url:img.src,w,h,xs,ys,cells:[]};
-  if(xs.length<3||ys.length<3){URL.revokeObjectURL(img.src);throw new Error("找不到表格线")}
-  const nDays=Math.min(7,xs.length-2),busy={};
-  for(let ri=1;ri<ys.length-1;ri++){
-    const hour=H0+ri-1;if(hour>=H1)break;
-    for(let ci=1;ci<=nDays;ci++){
-      const x0=xs[ci],x1=xs[ci+1],y0=ys[ri],y1=ys[ri+1],ix=(x1-x0)*.12,iy=(y1-y0)*.12;
-      let n=0,t=0;
-      for(let y=Math.floor(y0+iy);y<y1-iy;y+=2)for(let x=Math.floor(x0+ix);x<x1-ix;x+=2){t++;n+=colored[y*w+x]}
-      if(t&&n/t>.35){busy[(ci-1)+"-"+hour]="有课";geo.cells.push([x0,y0,x1,y1])}
-    }
-  }
-  return{busy,geo};
+  const r=analyzeTable(cx.getImageData(0,0,w,h).data,w,h,H0,H1);
+  if(r.error){URL.revokeObjectURL(img.src);throw new Error(r.error)}
+  const geo={url:img.src,w,h,xs:r.xs,ys:r.ys,cells:r.cells};
+  // 结构自检：和预期（7 天 × 07–22 点共 15 行）对不上时，提醒用户核对，而不是悄悄给出错位的结果
+  const warn=[];
+  if(nw<500)warn.push("图片分辨率偏低，建议用更清晰的截图");
+  if(r.days<5)warn.push(`只找到 ${r.days} 天的列`);
+  else if(r.rows!==H1-H0)warn.push(`表格有 ${r.rows} 行，和 ${pad(H0)}–${pad(H1)} 不一致，时间可能错位（可用下方按钮整体移动）`);
+  geo.warn=warn.join("；");
+  return{busy:r.busy,geo};
 }
 const reduceMotion=matchMedia("(prefers-reduced-motion: reduce)").matches;
 function playScan(geo){
@@ -495,6 +621,7 @@ async function handleFiles(files){
     let res;
     try{res=await detect(f)}catch(e){toast(`${e.message}，可以改用手动录入`);continue}
     openEditor({id:uid(),name:"",busy:res.busy,isNew:true},res.geo);
+    if(res.geo.warn)toast("识别结果可能不准："+res.geo.warn);
     await waitClose();
   }
 }
@@ -619,25 +746,32 @@ function itemEl(x,isNear){
   const el=document.createElement("div");el.className="item"+(isNear?"":" all");
   el.innerHTML=`<span class="day">${DAYS[x.d]}</span><div class="txt"><div class="tm">${pad(x.s)} – ${pad(x.e)}</div><div class="sub"></div></div><span class="len">${x.e-x.s} 小时</span>`;
   const sub=el.querySelector(".sub");
-  if(isNear){const w=document.createElement("span");w.className="who";w.style.overflow="hidden";setAv(w,x.who);sub.append(w,nameOf(x.who)+" 有课，其他人都有空")}
+  if(isNear){const w=document.createElement("span");w.className="who";w.style.overflow="hidden";setAv(w,x.who);{const c=courseOf(x.who,x.d,x.s);sub.append(w,nameOf(x.who)+(c?"（"+c+"）":"")+" 有课，其他人都有空")}}
   else sub.textContent="周"+DAYS[x.d]+" · 大家都没课";
   return el;
 }
 function renderDetail(){
   const el=$("#detail");
-  if(!selCell){el.innerHTML=`<span class="muted">点一个格子，看看谁有空、谁有课。</span>`;return}
+  if(!selCell){el.innerHTML=`<span class="muted">点一个格子，看看谁有空、谁有课、在上什么。</span>`;return}
   const{d,h}=selCell,fr=active();
   const free=fr.filter(m=>!(m.busy||{})[d+"-"+h]),busy=fr.filter(m=>(m.busy||{})[d+"-"+h]);
-  el.innerHTML=`<div class="when"></div><div class="row"></div><div class="row muted"></div>`;
-  el.children[0].textContent=`周${DAYS[d]} ${pad(h)} – ${pad(h+1)}`;
-  el.children[1].textContent="有空："+(free.map(nameOf).join("、")||"没人");
-  el.children[2].textContent=busy.length?"有课："+busy.map(nameOf).join("、"):"";
+  el.innerHTML="";
+  const add=(cls,txt)=>{const r=document.createElement("div");r.className=cls;if(txt!=null)r.textContent=txt;el.appendChild(r);return r};
+  add("when",`周${DAYS[d]} ${pad(h)} – ${pad(h+1)}`);
+  add("row","有空："+(free.map(nameOf).join("、")||"没人"));
+  if(busy.length){
+    add("row","有课：");
+    for(const m of busy){
+      const r=add("row bl",nameOf(m)),c=courseOf(m,d,h);
+      if(c){const sp=document.createElement("span");sp.className="course";sp.textContent=" · "+c;r.appendChild(sp)}
+    }
+  }
 }
 
 /* ---------- 编辑器 ---------- */
 let scanUrl=null;
 function openEditor(m,geo){
-  editing=m;$("#nameInput").value=m.name||"";renderAva();
+  editing=m;$("#nameInput").value=m.name||"";renderAva();$("#courseInput").value="";
   $("#sheetTitle").textContent=m.isNew?"核对课表":"编辑课表";
   if(geo){scanUrl=geo.url;playScan(geo)}else $("#scanBox").hidden=true;
   renderEditor();$("#sheet").classList.add("open");$("#sheet .sheet").scrollTop=0;
@@ -648,11 +782,16 @@ function renderEditor(){
   for(let h=H0;h<H1;h++){
     html+=`<tr><td class="t"><span>${pad(h)}</span><span>${pad(h+1)}</span></td>`;
     for(let d=0;d<7;d++){const b=m.busy[d+"-"+h];
-      html+=`<td class="c ed${b?" busy":""}"><button data-k="${d}-${h}" aria-pressed="${!!b}" aria-label="周${DAYS[d]} ${pad(h)}">${b?esc(LBL()):""}</button></td>`}
+      html+=`<td class="c ed${b?" busy":""}"><button data-k="${d}-${h}" aria-pressed="${!!b}" aria-label="周${DAYS[d]} ${pad(h)}">${b?"<span>"+esc(b!=="有课"?b:LBL())+"</span>":""}</button></td>`}
     html+="</tr>";
   }
   $("#edGrid").innerHTML=html+"</tbody>";
-  $("#edGrid").querySelectorAll("button").forEach(b=>b.onclick=()=>{const k=b.dataset.k;m.busy[k]?delete m.busy[k]:m.busy[k]="有课";renderEditor()});
+  $("#edGrid").querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    const k=b.dataset.k,name=$("#courseInput").value.trim(),cur=m.busy[k];
+    if(!cur)m.busy[k]=name||"有课";
+    else if(name&&cur!==name)m.busy[k]=name;   // 已有课：填了不同的课程名就改名
+    else delete m.busy[k];                      // 否则取消
+    renderEditor()});
 }
 function shift(dh){
   const nb={};for(const[k,v]of Object.entries(editing.busy)){const[d,h]=k.split("-").map(Number);const nh=h+dh;if(nh>=H0&&nh<H1)nb[d+"-"+nh]=v}
@@ -701,7 +840,7 @@ if(!useFirebase){$("#localBanner").hidden=false;enterGroup("LOCAL")}
 else{
   const fromUrl=cleanCode(new URLSearchParams(location.search).get("g"));
   const saved=LS.get("yq-group",null);
-  if(fromUrl)enterGroup(fromUrl);else if(saved)enterGroup(saved);else $("#joinView").hidden=false;
+  if(fromUrl)enterGroup(fromUrl);else if(saved)enterGroup(saved);else showJoin();
 }
 if("serviceWorker"in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
