@@ -67,7 +67,10 @@ svg{display:block}
 .story.add .av{background:var(--bg);color:var(--ink)}
 .story .nm{font-size:12px;max-width:68px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
 .story.off .nm{color:var(--muted)}
-.hint{padding:0 16px 12px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}
+.hint{display:flex;align-items:center;gap:8px;padding:0 16px 12px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}
+.hint .ht{flex:1;min-width:0}
+.hint .chip{height:28px;padding:0 10px;font-size:12px}
+.hint .chip:disabled{opacity:.35;cursor:default}
 
 /* 标签页 */
 .tabs{display:flex;border-bottom:1px solid var(--line)}
@@ -219,7 +222,7 @@ td.c.ed.busy button{color:var(--bg)}
   <section id="mainView" hidden>
     <div class="meta" id="metaRow" hidden><span class="live" id="live"></span><span>小组</span><b id="codeText"></b><span id="liveText">· 连接中</span></div>
     <div class="stories" id="stories"></div>
-    <div class="hint" id="hint">点头像可以编辑，或暂时不算入对比</div>
+    <div class="hint" id="hint"><span class="ht">点头像可以编辑，或暂时不算入对比</span><button class="chip" id="allOn" type="button">全部算入</button><button class="chip" id="allOff" type="button">全部不算入</button></div>
 
     <div id="compare" hidden>
       <div class="tabs" role="tablist">
@@ -299,13 +302,12 @@ td.c.ed.busy button{color:var(--bg)}
 <script type="module">
 /* ====== 把 Firebase 控制台里复制的 firebaseConfig 粘贴到这里 ====== */
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyC54OX-KoZA9QjY-zweQQDiPqhIoOVmvYI",
-  authDomain: "freetimeforonlyus.firebaseapp.com",
-  projectId: "freetimeforonlyus",
-  storageBucket: "freetimeforonlyus.firebasestorage.app",
-  messagingSenderId: "1048250893149",
-  appId: "1:1048250893149:web:de5cab89510d29244d1eb4",
-  measurementId: "G-NZJ2SMRYBZ"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "000000000000",
+  appId: "YOUR_APP_ID"
 };
 /* ================================================================ */
 
@@ -538,9 +540,19 @@ function render(){
     b.onclick=()=>memberMenu(m);st.appendChild(b);
   }
   $("#hint").hidden=!members.length;
+  $("#allOn").disabled=!members.some(m=>hidden.has(m.id));
+  $("#allOff").disabled=members.every(m=>hidden.has(m.id));
   $("#compare").hidden=!members.length;$("#noMembers").hidden=!!members.length;
   if(members.length)renderCompare();
 }
+function setAllCompare(on){
+  if(on)members.forEach(m=>hidden.delete(m.id));
+  else members.forEach(m=>hidden.add(m.id));
+  LS.set("yq-hidden",[...hidden]);selCell=null;render();
+  toast(on?"已全部算入对比":"已全部不算入对比");
+}
+$("#allOn").onclick=()=>setAllCompare(true);
+$("#allOff").onclick=()=>setAllCompare(false);
 async function memberMenu(m){
   const on=!hidden.has(m.id),n=Object.keys(m.busy||{}).length;
   const v=await actionMenu(`${nameOf(m)} · 每周 ${n} 小时有课`,[
