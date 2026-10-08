@@ -76,10 +76,6 @@ svg{display:block}
 .allbtn .dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--ink);box-sizing:border-box;transition:background .15s}
 .allbtn[data-s="all"] .dot{background:var(--ink)}
 .allbtn[data-s="part"] .dot{background:linear-gradient(90deg,var(--ink) 50%,transparent 50%)}
-.keyrow{display:flex;align-items:center;gap:8px;margin:0 0 6px}
-.keyrow .kl{flex:none;font-size:12px;font-weight:600;color:var(--muted)}
-.keyrow input{flex:1;min-width:0;margin:0;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
-.keyrow .chip{flex:none;height:36px}
 
 /* 标签页 */
 .tabs{display:flex;border-bottom:1px solid var(--line)}
@@ -103,7 +99,7 @@ th:first-child,td.t{width:42px;font-size:10px;line-height:1.15;color:var(--muted
 td.t span{display:block}
 td.t span+span{opacity:.6}
 td.c{padding:0;border-radius:4px}
-td.c button{display:flex;width:100%;height:34px;align-items:center;justify-content:center;font-size:11px;font-weight:600;border-radius:4px;color:var(--muted)}
+td.c button{display:flex;width:100%;height:34px;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;border-radius:4px;color:var(--muted)}
 td.c.free{background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)}
 td.c.free.sel{box-shadow:inset 0 0 0 1px var(--line),0 0 0 2px var(--bg),0 0 0 3.5px var(--ink)}
 td.c.dark button{color:var(--bg)}
@@ -268,7 +264,7 @@ td.c.ed.busy button{color:var(--bg)}
         <div class="gridwrap"><table id="grid"></table></div>
         <div class="legend">
           <span><i style="background:var(--bg);box-shadow:inset 0 0 0 1px var(--line)"></i>空白＝全员有空</span>
-          <span><i style="background:color-mix(in srgb,var(--ink) 35%,var(--bg))"></i><i style="background:var(--ink);margin-left:-4px"></i>有字＝有事不得空，越深＝越多人</span>
+          <span><i style="background:color-mix(in srgb,var(--ink) 35%,var(--bg))"></i><i style="background:var(--ink);margin-left:-4px"></i>数字＝这个时段有几个人在上课，越深＝越多人</span>
         </div>
         <div class="detail" id="detail"><span class="muted">点一个格子，看看谁有空、谁有课。</span></div>
       </div>
@@ -308,9 +304,6 @@ td.c.ed.busy button{color:var(--bg)}
       </div>
       <input type="file" id="avaFile" accept="image/*" hidden>
       <input type="text" id="nameInput" placeholder="名字" maxlength="30">
-      <div class="keyrow"><span class="kl">key</span><input type="text" id="keyInput" maxlength="16" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="课表 key"><button class="chip" id="keyCopy" type="button">复制</button><button class="chip" id="keyNew" type="button">换新</button></div>
-      <p class="note" id="keyWarn" style="color:var(--danger)" hidden>当前 Firestore 规则不允许保存 key，改 key 暂时不会生效；课表本身仍可正常保存。</p>
-      <p class="note">key 相同的课表会互通：改一处，所有用同一个 key 的人（包括其他小组里的）都会同步。key 像密码，知道它的人都能修改这份课表。</p>
       <p class="note">有字的格子＝有事不得空，点格子切换。整体错了一行的话，用下面的按钮移动。</p>
       <input type="text" id="courseInput" class="course-in" placeholder="课程名（可选）：填了再点格子，就会写入这门课" maxlength="20">
       <div class="ed-tools">
@@ -329,13 +322,12 @@ td.c.ed.busy button{color:var(--bg)}
 <script type="module">
 /* ====== 把 Firebase 控制台里复制的 firebaseConfig 粘贴到这里 ====== */
 const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyC54OX-KoZA9QjY-zweQQDiPqhIoOVmvYI",
-  authDomain: "freetimeforonlyus.firebaseapp.com",
-  projectId: "freetimeforonlyus",
-  storageBucket: "freetimeforonlyus.firebasestorage.app",
-  messagingSenderId: "1048250893149",
-  appId: "1:1048250893149:web:de5cab89510d29244d1eb4",
-  measurementId: "G-NZJ2SMRYBZ"
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "000000000000",
+  appId: "YOUR_APP_ID"
 };
 /* ================================================================ */
 
@@ -374,49 +366,12 @@ function actionMenu(title,options){
 /* ---------- 数据层 ---------- */
 const useFirebase=!String(FIREBASE_CONFIG.apiKey).startsWith("YOUR");
 let fb=null;
-/* 数据层：成员信息存在各自的小组里；课表（busy）按 key 单独存一份，key 相同的成员共用它，所以能跨小组互通。
-   成员文档里也留一份 busy 作为备份（共享课表还没读到、或读不到时就用它）。 */
-function makeStore(b){
-  let raw=[],cb=null,unsubM=null,keyBlocked=false;const shared=new Map(),subs=new Map();
-  const merged=()=>raw.map(m=>{const s=m.key&&shared.get(m.key);return s&&s.busy?Object.assign({},m,{busy:s.busy}):m});
-  const emit=()=>{cb&&cb(merged())};
-  const sync=()=>{
-    const want=new Set(raw.map(m=>m.key).filter(Boolean));
-    for(const k of want)if(!subs.has(k))subs.set(k,b.subShared(k,d=>{shared.set(k,d);emit()}));
-    for(const[k,u]of[...subs])if(!want.has(k)){u();subs.delete(k);shared.delete(k)}
-  };
-  return{
-    subscribe(f){cb=f;unsubM=b.subMembers(list=>{raw=list;sync();emit()})},
-    // 返回 "ok" | "nokey"（Firestore 规则不认 key 字段：已退回旧格式保存，编辑不受影响，但课表互通暂不可用）
-    async save(m){
-      const useKey=!!m.key&&!keyBlocked;
-      try{await b.saveMember(m,useKey)}
-      catch(e){
-        if(!(useKey&&e&&e.code==="permission-denied"))throw e;
-        keyBlocked=true;await b.saveMember(m,false);return "nokey";
-      }
-      if(!useKey)return m.key?"nokey":"ok";
-      try{await b.setShared(m.key,{busy:m.busy})}catch(e){e.shared=true;throw e}
-      return "ok";
-    },
-    keysBlocked:()=>keyBlocked,
-    remove:id=>b.removeMember(id),
-    getShared:k=>b.getShared(k),
-    stop(){unsubM&&unsubM();unsubM=null;for(const u of subs.values())u();subs.clear();shared.clear();cb=null}
-  };
+function localStore(){
+  const load=()=>LS.get("yq-local",[]);let cb=null;
+  return{subscribe(f){cb=f;f(load())},
+    async save(m){const l=load().filter(x=>x.id!==m.id);l.push(m);LS.set("yq-local",l);cb&&cb(l)},
+    async remove(id){const l=load().filter(x=>x.id!==id);LS.set("yq-local",l);cb&&cb(l)},stop(){}};
 }
-function localBackend(){
-  const lm=()=>LS.get("yq-local",[]),lsh=()=>LS.get("yq-shared",{});let mcb=null;const scb=new Map();
-  return{
-    subMembers(f){mcb=f;f(lm());return()=>{mcb=null}},
-    async saveMember(m){const l=lm().filter(x=>x.id!==m.id);l.push(m);LS.set("yq-local",l);mcb&&mcb(l)},
-    async removeMember(id){const l=lm().filter(x=>x.id!==id);LS.set("yq-local",l);mcb&&mcb(l)},
-    subShared(k,f){if(!scb.has(k))scb.set(k,new Set());scb.get(k).add(f);f(lsh()[k]||null);return()=>scb.get(k).delete(f)},
-    async getShared(k){return lsh()[k]||null},
-    async setShared(k,d){const o=lsh();o[k]={busy:d.busy,updatedAt:Date.now()};LS.set("yq-shared",o);(scb.get(k)||[]).forEach(f=>f(o[k]))}
-  };
-}
-const localStore=()=>makeStore(localBackend());
 async function firebaseStore(code){
   if(!fb){
     const app=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
@@ -424,20 +379,16 @@ async function firebaseStore(code){
     const a=app.initializeApp(FIREBASE_CONFIG);
     fb={fs,db:fs.initializeFirestore(a,{localCache:fs.persistentLocalCache()})};
   }
-  const{fs,db}=fb;const col=fs.collection(db,"groups",code,"members");
-  // 互通课表放在 groups/S-{key}/members/s：和成员文档同一种路径形式，所以不用改 Firestore 规则；
-  // 小组码只含字母数字，不会和带 "-" 的路径撞名
-  const sdoc=k=>fs.doc(db,"groups","S-"+k,"members","s");
-  return makeStore({
-    subMembers(f){return fs.onSnapshot(col,{includeMetadataChanges:true},snap=>{
+  const{fs,db}=fb;const col=fs.collection(db,"groups",code,"members");let unsub=null;
+  return{
+    subscribe(f){unsub=fs.onSnapshot(col,{includeMetadataChanges:true},snap=>{
       setLive(!snap.metadata.fromCache);f(snap.docs.map(d=>Object.assign({id:d.id},d.data())));
     },err=>{toast("同步出错："+(err.code||"请检查 Firebase 设置"));setLive(false)})},
-    async saveMember(m,withKey){const{id,key,...data}=m;if(withKey&&key)data.key=key;data.updatedAt=Date.now();await fs.setDoc(fs.doc(col,id),data)},
-    removeMember:id=>fs.deleteDoc(fs.doc(col,id)),
-    subShared(k,f){return fs.onSnapshot(sdoc(k),s=>f(s.exists()?s.data():null),()=>f(null))},
-    async getShared(k){const s=await fs.getDoc(sdoc(k));return s.exists()?s.data():null},
-    setShared:(k,d)=>fs.setDoc(sdoc(k),{name:"s",color:"#000000",busy:d.busy,updatedAt:Date.now()})
-  });
+    // 只写原来的几种字段（name/color/busy/avatar/updatedAt）；若旧数据里留有 key 字段，保存时顺手清掉
+    async save(m){const{id,key,...data}=m;data.updatedAt=Date.now();await fs.setDoc(fs.doc(col,id),data)},
+    async remove(id){await fs.deleteDoc(fs.doc(col,id))},
+    stop(){unsub&&unsub()}
+  };
 }
 function setLive(on){$("#live").classList.toggle("on",on);$("#liveText").textContent=on?"· 已同步":"· 离线"}
 
@@ -463,7 +414,7 @@ async function enterGroup(code){
     $("#codeText").textContent=groupTitle(code);$("#metaRow").hidden=false;$("#shareBtn").hidden=false;$("#moreBtn").hidden=false;$("#live").classList.remove("on");$("#liveText").textContent="· 连接中";
     try{store=await firebaseStore(code)}catch(e){toast("连不上 Firebase，请检查网络或设置");return}
   }else store=localStore();
-  $("#joinView").hidden=true;$("#mainView").hidden=false;$("#addTop").hidden=false;$("#moreBtn").hidden=false;
+  $("#joinView").hidden=true;$("#mainView").hidden=false;$("#addTop").hidden=false;$("#moreBtn").hidden=!useFirebase;
   render();
   store.subscribe(list=>{members=list.sort((a,b)=>String(a.name).localeCompare(String(b.name),"zh"));render()});
 }
@@ -531,14 +482,10 @@ async function share(code=curCode()){
 }
 $("#shareBtn").onclick=()=>share();
 $("#moreBtn").onclick=async()=>{
-  const opts=[{label:`格子文字：「${LBL()}」`,value:"label",cls:"strong"}];
+  const opts=[];
   if(useFirebase)opts.push({label:"切换小组",value:"switch"},{label:"复制邀请链接",value:"share"});
   const v=await actionMenu(useFirebase?"小组 "+groupTitle(curCode()):"设置",opts);
   if(v==="share")share();if(v==="switch")switchGroup();
-  if(v==="label"){
-    const t=await inputMenu("有事的格子显示什么字？",LBL(),"例如：课、忙、✕",3);
-    if(t!==null){view.label=t.trim()||"课";LS.set("yq-view",view);renderCompare();toast(`格子文字已改成「${LBL()}」`)}
-  }
 };
 function inputMenu(title,value,ph,max,quicks=["课","忙","✕","●"]){
   return new Promise(res=>{
@@ -729,7 +676,6 @@ function setAllCompare(on){
   if(on)members.forEach(m=>hidden.delete(m.id));
   else members.forEach(m=>hidden.add(m.id));
   LS.set("yq-hidden",[...hidden]);selCell=null;render();
-  toast(on?"已全部算入对比":"已全部不算入对比");
 }
 $("#allToggle").onclick=()=>setAllCompare(compareState()!=="all");
 async function memberMenu(m){
@@ -774,7 +720,7 @@ function renderCompare(){
       const sel=selCell&&selCell.d===d&&selCell.h===h?" sel":"";
       if(!b)html+=`<td class="c free${sel}"><button data-d="${d}" data-h="${h}" aria-label="周${DAYS[d]} ${pad(h)}–${pad(h+1)}，全员有空"></button></td>`;
       else{const pct=Math.round(18+82*b/n);
-        html+=`<td class="c ${pct>=55?"dark":"lite"}${sel}" style="background:color-mix(in srgb,var(--ink) ${pct}%,var(--bg))"><button data-d="${d}" data-h="${h}" aria-label="周${DAYS[d]} ${pad(h)}–${pad(h+1)}，${b} 人有事">${esc(LBL())}</button></td>`}
+        html+=`<td class="c ${pct>=55?"dark":"lite"}${sel}" style="background:color-mix(in srgb,var(--ink) ${pct}%,var(--bg))"><button data-d="${d}" data-h="${h}" aria-label="周${DAYS[d]} ${pad(h)}–${pad(h+1)}，${b} 人在上课">${b}</button></td>`}
     }
     html+="</tr>";
   }
@@ -821,32 +767,8 @@ function renderDetail(){
 
 /* ---------- 编辑器 ---------- */
 let scanUrl=null;
-const newKey=()=>Array.from(crypto.getRandomValues(new Uint8Array(8)),b=>CODE_CHARS[b%CODE_CHARS.length]).join("");
-// 把编辑中的课表改用另一个 key；这个 key 已经有课表时，让用户选择"采用它"还是"覆盖它"。返回最终生效的 key
-async function applyKey(m,raw){
-  const k=String(raw||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,16);
-  if(k===m.key)return m.key;
-  if(k.length<6){toast("key 需要 6–16 位字母或数字");return m.key}
-  let ex;
-  try{ex=await store.getShared(k)}catch(e){toast("暂时查不到这个 key，请检查网络后再试");return m.key}   // 查不到就不改，避免误覆盖别人的课表
-  if(editing!==m)return m.key;
-  if(!ex){m.key=k;toast("这是个新 key，保存后生效");return k}
-  const n=Object.keys(ex.busy||{}).length;
-  const v=await actionMenu(`这个 key 已经有课表（每周 ${n} 个小时有课）`,[{label:"改用这份课表",value:"adopt",cls:"strong"},{label:"用我现在的课表覆盖它",value:"over",cls:"danger"}]);
-  if(editing!==m||!v)return m.key;
-  if(v==="adopt"){m.busy=JSON.parse(JSON.stringify(ex.busy||{}));m.key=k;renderEditor();toast("已载入这份课表")}
-  else{m.key=k;toast("保存后会覆盖这个 key 的课表")}
-  return m.key;
-}
-$("#keyInput").onchange=async e=>{const m=editing;if(!m)return;e.target.value=await applyKey(m,e.target.value)};
-$("#keyCopy").onclick=async()=>{
-  if(!editing)return;
-  try{await navigator.clipboard.writeText(editing.key);toast("已复制 key")}catch(e){prompt("复制这个 key：",editing.key)}
-};
-$("#keyNew").onclick=()=>{if(!editing)return;editing.key=newKey();$("#keyInput").value=editing.key;toast("已换新 key，保存后就和原来的课表断开互通了")};
 function openEditor(m,geo){
-  if(!m.key)m.key=newKey();
-  editing=m;$("#keyInput").value=m.key;$("#keyWarn").hidden=!(store&&store.keysBlocked&&store.keysBlocked());$("#nameInput").value=m.name||"";renderAva();$("#courseInput").value="";
+  editing=m;$("#nameInput").value=m.name||"";renderAva();$("#courseInput").value="";
   $("#sheetTitle").textContent=m.isNew?"核对课表":"编辑课表";
   if(geo){scanUrl=geo.url;playScan(geo)}else $("#scanBox").hidden=true;
   renderEditor();$("#sheet").classList.add("open");$("#sheet .sheet").scrollTop=0;
@@ -882,9 +804,9 @@ $("#doneBtn").onclick=async()=>{
   const m=editing;if(!m)return;
   const name=$("#nameInput").value.trim();
   if(!name){toast("先填一个名字");$("#nameInput").focus();return}
-  const data={id:m.id,name,color:m.color||"#000000",busy:m.busy,key:m.key};if(m.avatar)data.avatar=m.avatar;
+  const data={id:m.id,name,color:m.color||"#000000",busy:m.busy};if(m.avatar)data.avatar=m.avatar;
   closeSheet();
-  try{const r=await store.save(data);toast(r==="nokey"?"已保存。但 Firestore 规则不允许 key 字段，课表互通暂不可用":"已保存")}catch(e){toast(e.shared?"已保存，但互通同步失败："+(e.code||e.message):"保存失败："+(e.code||e.message))}
+  try{await store.save(data);toast("已保存")}catch(e){toast("保存失败："+(e.code||e.message))}
 };
 $("#cancelBtn").onclick=closeSheet;
 
