@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Time Table</title>
-<meta name="description" content="只是个小课表(˶ᵔ ᵕ ᵔ˶)~">
+<meta name="description" content="和朋友共享课表，一眼看出大家什么时候都有空。">
 <meta property="og:title" content="Time Table">
-<meta property="og:description" content="只是个小课表(˶ᵔ ᵕ ᵔ˶)~">
+<meta property="og:description" content="和朋友共享课表，一眼看出大家什么时候都有空。">
 <meta property="og:image" content="og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
@@ -72,8 +72,14 @@ svg{display:block}
 .story.off .nm{color:var(--muted)}
 .hint{display:flex;align-items:center;gap:8px;padding:0 16px 12px;font-size:12px;color:var(--muted);border-bottom:1px solid var(--line)}
 .hint .ht{flex:1;min-width:0}
-.hint .chip{height:28px;padding:0 10px;font-size:12px}
-.hint .chip:disabled{opacity:.35;cursor:default}
+.allbtn{flex:none;display:inline-flex;align-items:center;gap:8px;height:28px;padding:0 10px 0 12px;border-radius:8px;background:var(--soft);color:var(--text);font-size:12px;font-weight:600}
+.allbtn .dot{width:12px;height:12px;border-radius:50%;border:2px solid var(--ink);box-sizing:border-box;transition:background .15s}
+.allbtn[data-s="all"] .dot{background:var(--ink)}
+.allbtn[data-s="part"] .dot{background:linear-gradient(90deg,var(--ink) 50%,transparent 50%)}
+.keyrow{display:flex;align-items:center;gap:8px;margin:0 0 6px}
+.keyrow .kl{flex:none;font-size:12px;font-weight:600;color:var(--muted)}
+.keyrow input{flex:1;min-width:0;margin:0;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.keyrow .chip{flex:none;height:36px}
 
 /* 标签页 */
 .tabs{display:flex;border-bottom:1px solid var(--line)}
@@ -227,7 +233,7 @@ td.c.ed.busy button{color:var(--bg)}
   <section id="joinView" class="join" hidden>
     <div class="logo"><img class="logo-svg" src="logo.png" alt="Time Table">
 </div>
-    <p>只是个小课表(˶ᵔ ᵕ ᵔ˶)~</p>
+    <p>和朋友共享课表，一眼看出大家什么时候都有空。</p>
     <div class="mygroups" id="myGroups" hidden><h4>我的小组</h4><div id="myGroupList"></div><div class="or">或</div></div>
     <button class="btn primary" id="createBtn">创建新小组</button>
     <div class="or">或</div>
@@ -239,7 +245,7 @@ td.c.ed.busy button{color:var(--bg)}
   <section id="mainView" hidden>
     <div class="meta" id="metaRow" hidden><span class="live" id="live"></span><button class="gbtn" id="groupBtn" type="button" aria-label="切换小组"><span>小组</span><b id="codeText"></b><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6"><path d="m3 4.5 3 3 3-3"/></svg></button><span id="liveText">· 连接中</span></div>
     <div class="stories" id="stories"></div>
-    <div class="hint" id="hint"><span class="ht">点头像可以编辑，或暂时不算入对比</span><button class="chip" id="allOn" type="button">全部算入</button><button class="chip" id="allOff" type="button">全部不算入</button></div>
+    <div class="hint" id="hint"><span class="ht">点头像可以编辑，或暂时不算入对比</span><button class="allbtn" id="allToggle" type="button" data-s="all"><span>全部算入</span><i class="dot"></i></button></div>
 
     <div id="compare" hidden>
       <div class="tabs" role="tablist">
@@ -302,6 +308,8 @@ td.c.ed.busy button{color:var(--bg)}
       </div>
       <input type="file" id="avaFile" accept="image/*" hidden>
       <input type="text" id="nameInput" placeholder="名字" maxlength="30">
+      <div class="keyrow"><span class="kl">key</span><input type="text" id="keyInput" maxlength="16" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="课表 key"><button class="chip" id="keyCopy" type="button">复制</button><button class="chip" id="keyNew" type="button">换新</button></div>
+      <p class="note">key 相同的课表会互通：改一处，所有用同一个 key 的人（包括其他小组里的）都会同步。key 像密码，知道它的人都能修改这份课表。</p>
       <p class="note">有字的格子＝有事不得空，点格子切换。整体错了一行的话，用下面的按钮移动。</p>
       <input type="text" id="courseInput" class="course-in" placeholder="课程名（可选）：填了再点格子，就会写入这门课" maxlength="20">
       <div class="ed-tools">
@@ -319,7 +327,7 @@ td.c.ed.busy button{color:var(--bg)}
 
 <script type="module">
 /* ====== 把 Firebase 控制台里复制的 firebaseConfig 粘贴到这里 ====== */
-const FIREBASE_CONFIG = {  
+const FIREBASE_CONFIG = {
   apiKey: "AIzaSyC54OX-KoZA9QjY-zweQQDiPqhIoOVmvYI",
   authDomain: "freetimeforonlyus.firebaseapp.com",
   projectId: "freetimeforonlyus",
@@ -365,12 +373,40 @@ function actionMenu(title,options){
 /* ---------- 数据层 ---------- */
 const useFirebase=!String(FIREBASE_CONFIG.apiKey).startsWith("YOUR");
 let fb=null;
-function localStore(){
-  const load=()=>LS.get("yq-local",[]);let cb=null;
-  return{subscribe(f){cb=f;f(load())},
-    async save(m){const l=load().filter(x=>x.id!==m.id);l.push(m);LS.set("yq-local",l);cb&&cb(l)},
-    async remove(id){const l=load().filter(x=>x.id!==id);LS.set("yq-local",l);cb&&cb(l)},stop(){}};
+/* 数据层：成员信息存在各自的小组里；课表（busy）按 key 单独存一份，key 相同的成员共用它，所以能跨小组互通。
+   成员文档里也留一份 busy 作为备份（共享课表还没读到、或读不到时就用它）。 */
+function makeStore(b){
+  let raw=[],cb=null,unsubM=null;const shared=new Map(),subs=new Map();
+  const merged=()=>raw.map(m=>{const s=m.key&&shared.get(m.key);return s&&s.busy?Object.assign({},m,{busy:s.busy}):m});
+  const emit=()=>{cb&&cb(merged())};
+  const sync=()=>{
+    const want=new Set(raw.map(m=>m.key).filter(Boolean));
+    for(const k of want)if(!subs.has(k))subs.set(k,b.subShared(k,d=>{shared.set(k,d);emit()}));
+    for(const[k,u]of[...subs])if(!want.has(k)){u();subs.delete(k);shared.delete(k)}
+  };
+  return{
+    subscribe(f){cb=f;unsubM=b.subMembers(list=>{raw=list;sync();emit()})},
+    async save(m){
+      await b.saveMember(m);
+      if(m.key){try{await b.setShared(m.key,{busy:m.busy})}catch(e){e.shared=true;throw e}}
+    },
+    remove:id=>b.removeMember(id),
+    getShared:k=>b.getShared(k),
+    stop(){unsubM&&unsubM();unsubM=null;for(const u of subs.values())u();subs.clear();shared.clear();cb=null}
+  };
 }
+function localBackend(){
+  const lm=()=>LS.get("yq-local",[]),lsh=()=>LS.get("yq-shared",{});let mcb=null;const scb=new Map();
+  return{
+    subMembers(f){mcb=f;f(lm());return()=>{mcb=null}},
+    async saveMember(m){const l=lm().filter(x=>x.id!==m.id);l.push(m);LS.set("yq-local",l);mcb&&mcb(l)},
+    async removeMember(id){const l=lm().filter(x=>x.id!==id);LS.set("yq-local",l);mcb&&mcb(l)},
+    subShared(k,f){if(!scb.has(k))scb.set(k,new Set());scb.get(k).add(f);f(lsh()[k]||null);return()=>scb.get(k).delete(f)},
+    async getShared(k){return lsh()[k]||null},
+    async setShared(k,d){const o=lsh();o[k]={busy:d.busy,updatedAt:Date.now()};LS.set("yq-shared",o);(scb.get(k)||[]).forEach(f=>f(o[k]))}
+  };
+}
+const localStore=()=>makeStore(localBackend());
 async function firebaseStore(code){
   if(!fb){
     const app=await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js");
@@ -378,15 +414,20 @@ async function firebaseStore(code){
     const a=app.initializeApp(FIREBASE_CONFIG);
     fb={fs,db:fs.initializeFirestore(a,{localCache:fs.persistentLocalCache()})};
   }
-  const{fs,db}=fb;const col=fs.collection(db,"groups",code,"members");let unsub=null;
-  return{
-    subscribe(f){unsub=fs.onSnapshot(col,{includeMetadataChanges:true},snap=>{
+  const{fs,db}=fb;const col=fs.collection(db,"groups",code,"members");
+  // 互通课表放在 groups/S-{key}/members/s：和成员文档同一种路径形式，所以不用改 Firestore 规则；
+  // 小组码只含字母数字，不会和带 "-" 的路径撞名
+  const sdoc=k=>fs.doc(db,"groups","S-"+k,"members","s");
+  return makeStore({
+    subMembers(f){return fs.onSnapshot(col,{includeMetadataChanges:true},snap=>{
       setLive(!snap.metadata.fromCache);f(snap.docs.map(d=>Object.assign({id:d.id},d.data())));
     },err=>{toast("同步出错："+(err.code||"请检查 Firebase 设置"));setLive(false)})},
-    async save(m){const{id,...data}=m;data.updatedAt=Date.now();await fs.setDoc(fs.doc(col,id),data)},
-    async remove(id){await fs.deleteDoc(fs.doc(col,id))},
-    stop(){unsub&&unsub()}
-  };
+    async saveMember(m){const{id,...data}=m;data.updatedAt=Date.now();await fs.setDoc(fs.doc(col,id),data)},
+    removeMember:id=>fs.deleteDoc(fs.doc(col,id)),
+    subShared(k,f){return fs.onSnapshot(sdoc(k),s=>f(s.exists()?s.data():null),()=>f(null))},
+    async getShared(k){const s=await fs.getDoc(sdoc(k));return s.exists()?s.data():null},
+    setShared:(k,d)=>fs.setDoc(sdoc(k),{busy:d.busy,updatedAt:Date.now()})
+  });
 }
 function setLive(on){$("#live").classList.toggle("on",on);$("#liveText").textContent=on?"· 已同步":"· 离线"}
 
@@ -668,19 +709,19 @@ function render(){
     b.onclick=()=>memberMenu(m);st.appendChild(b);
   }
   $("#hint").hidden=!members.length;
-  $("#allOn").disabled=!members.some(m=>hidden.has(m.id));
-  $("#allOff").disabled=members.every(m=>hidden.has(m.id));
+  const cs=compareState(),tg=$("#allToggle");tg.dataset.s=cs;tg.setAttribute("aria-pressed",String(cs==="all"));
+  tg.setAttribute("aria-label",cs==="all"?"已全部算入，点击改为全部不算入":"点击全部算入");
   $("#compare").hidden=!members.length;$("#noMembers").hidden=!!members.length;
   if(members.length)renderCompare();
 }
+const compareState=()=>{const on=members.filter(m=>!hidden.has(m.id)).length;return on===members.length?"all":on===0?"none":"part"};
 function setAllCompare(on){
   if(on)members.forEach(m=>hidden.delete(m.id));
   else members.forEach(m=>hidden.add(m.id));
   LS.set("yq-hidden",[...hidden]);selCell=null;render();
   toast(on?"已全部算入对比":"已全部不算入对比");
 }
-$("#allOn").onclick=()=>setAllCompare(true);
-$("#allOff").onclick=()=>setAllCompare(false);
+$("#allToggle").onclick=()=>setAllCompare(compareState()!=="all");
 async function memberMenu(m){
   const on=!hidden.has(m.id),n=Object.keys(m.busy||{}).length;
   const v=await actionMenu(`${nameOf(m)} · 每周 ${n} 小时有课`,[
@@ -690,7 +731,7 @@ async function memberMenu(m){
   if(v==="edit")openEditor(JSON.parse(JSON.stringify(m)));
   if(v==="toggle"){on?hidden.add(m.id):hidden.delete(m.id);LS.set("yq-hidden",[...hidden]);render()}
   if(v==="del"){
-    const ok=await actionMenu(`删除 ${nameOf(m)} 的课表？`,[{label:"删除",value:true,cls:"danger"}]);
+    const ok=await actionMenu(`删除 ${nameOf(m)} 的课表？小组里所有人都会看不到。`,[{label:"删除",value:true,cls:"danger"}]);
     if(ok){selCell=null;try{await store.remove(m.id)}catch(e){toast("删除失败")}}
   }
 }
@@ -770,8 +811,32 @@ function renderDetail(){
 
 /* ---------- 编辑器 ---------- */
 let scanUrl=null;
+const newKey=()=>Array.from(crypto.getRandomValues(new Uint8Array(8)),b=>CODE_CHARS[b%CODE_CHARS.length]).join("");
+// 把编辑中的课表改用另一个 key；这个 key 已经有课表时，让用户选择"采用它"还是"覆盖它"。返回最终生效的 key
+async function applyKey(m,raw){
+  const k=String(raw||"").toUpperCase().replace(/[^A-Z0-9]/g,"").slice(0,16);
+  if(k===m.key)return m.key;
+  if(k.length<6){toast("key 需要 6–16 位字母或数字");return m.key}
+  let ex;
+  try{ex=await store.getShared(k)}catch(e){toast("暂时查不到这个 key，请检查网络后再试");return m.key}   // 查不到就不改，避免误覆盖别人的课表
+  if(editing!==m)return m.key;
+  if(!ex){m.key=k;toast("这是个新 key，保存后生效");return k}
+  const n=Object.keys(ex.busy||{}).length;
+  const v=await actionMenu(`这个 key 已经有课表（每周 ${n} 个小时有课）`,[{label:"改用这份课表",value:"adopt",cls:"strong"},{label:"用我现在的课表覆盖它",value:"over",cls:"danger"}]);
+  if(editing!==m||!v)return m.key;
+  if(v==="adopt"){m.busy=JSON.parse(JSON.stringify(ex.busy||{}));m.key=k;renderEditor();toast("已载入这份课表")}
+  else{m.key=k;toast("保存后会覆盖这个 key 的课表")}
+  return m.key;
+}
+$("#keyInput").onchange=async e=>{const m=editing;if(!m)return;e.target.value=await applyKey(m,e.target.value)};
+$("#keyCopy").onclick=async()=>{
+  if(!editing)return;
+  try{await navigator.clipboard.writeText(editing.key);toast("已复制 key")}catch(e){prompt("复制这个 key：",editing.key)}
+};
+$("#keyNew").onclick=()=>{if(!editing)return;editing.key=newKey();$("#keyInput").value=editing.key;toast("已换新 key，保存后就和原来的课表断开互通了")};
 function openEditor(m,geo){
-  editing=m;$("#nameInput").value=m.name||"";renderAva();$("#courseInput").value="";
+  if(!m.key)m.key=newKey();
+  editing=m;$("#keyInput").value=m.key;$("#nameInput").value=m.name||"";renderAva();$("#courseInput").value="";
   $("#sheetTitle").textContent=m.isNew?"核对课表":"编辑课表";
   if(geo){scanUrl=geo.url;playScan(geo)}else $("#scanBox").hidden=true;
   renderEditor();$("#sheet").classList.add("open");$("#sheet .sheet").scrollTop=0;
@@ -807,9 +872,9 @@ $("#doneBtn").onclick=async()=>{
   const m=editing;if(!m)return;
   const name=$("#nameInput").value.trim();
   if(!name){toast("先填一个名字");$("#nameInput").focus();return}
-  const data={id:m.id,name,color:m.color||"#000000",busy:m.busy};if(m.avatar)data.avatar=m.avatar;
+  const data={id:m.id,name,color:m.color||"#000000",busy:m.busy,key:m.key};if(m.avatar)data.avatar=m.avatar;
   closeSheet();
-  try{await store.save(data);toast("已保存")}catch(e){toast("保存失败："+(e.code||e.message))}
+  try{await store.save(data);toast("已保存")}catch(e){toast(e.shared?"已保存，但互通同步失败："+(e.code||e.message):"保存失败："+(e.code||e.message))}
 };
 $("#cancelBtn").onclick=closeSheet;
 
