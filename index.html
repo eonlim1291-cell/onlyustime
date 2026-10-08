@@ -309,6 +309,7 @@ td.c.ed.busy button{color:var(--bg)}
       <input type="file" id="avaFile" accept="image/*" hidden>
       <input type="text" id="nameInput" placeholder="名字" maxlength="30">
       <div class="keyrow"><span class="kl">key</span><input type="text" id="keyInput" maxlength="16" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-label="课表 key"><button class="chip" id="keyCopy" type="button">复制</button><button class="chip" id="keyNew" type="button">换新</button></div>
+      <p class="note" id="keyWarn" style="color:var(--danger)" hidden>当前 Firestore 规则不允许保存 key，改 key 暂时不会生效；课表本身仍可正常保存。</p>
       <p class="note">key 相同的课表会互通：改一处，所有用同一个 key 的人（包括其他小组里的）都会同步。key 像密码，知道它的人都能修改这份课表。</p>
       <p class="note">有字的格子＝有事不得空，点格子切换。整体错了一行的话，用下面的按钮移动。</p>
       <input type="text" id="courseInput" class="course-in" placeholder="课程名（可选）：填了再点格子，就会写入这门课" maxlength="20">
@@ -376,7 +377,7 @@ let fb=null;
 /* 数据层：成员信息存在各自的小组里；课表（busy）按 key 单独存一份，key 相同的成员共用它，所以能跨小组互通。
    成员文档里也留一份 busy 作为备份（共享课表还没读到、或读不到时就用它）。 */
 function makeStore(b){
-  let raw=[],cb=null,unsubM=null;const shared=new Map(),subs=new Map();
+  let raw=[],cb=null,unsubM=null,keyBlocked=false;const shared=new Map(),subs=new Map();
   const merged=()=>raw.map(m=>{const s=m.key&&shared.get(m.key);return s&&s.busy?Object.assign({},m,{busy:s.busy}):m});
   const emit=()=>{cb&&cb(merged())};
   const sync=()=>{
@@ -386,10 +387,19 @@ function makeStore(b){
   };
   return{
     subscribe(f){cb=f;unsubM=b.subMembers(list=>{raw=list;sync();emit()})},
+    // 返回 "ok" | "nokey"（Firestore 规则不认 key 字段：已退回旧格式保存，编辑不受影响，但课表互通暂不可用）
     async save(m){
-      await b.saveMember(m);
-      if(m.key){try{await b.setShared(m.key,{busy:m.busy})}catch(e){e.shared=true;throw e}}
+      const useKey=!!m.key&&!keyBlocked;
+      try{await b.saveMember(m,useKey)}
+      catch(e){
+        if(!(useKey&&e&&e.code==="permission-denied"))throw e;
+        keyBlocked=true;await b.saveMember(m,false);return "nokey";
+      }
+      if(!useKey)return m.key?"nokey":"ok";
+      try{await b.setShared(m.key,{busy:m.busy})}catch(e){e.shared=true;throw e}
+      return "ok";
     },
+    keysBlocked:()=>keyBlocked,
     remove:id=>b.removeMember(id),
     getShared:k=>b.getShared(k),
     stop(){unsubM&&unsubM();unsubM=null;for(const u of subs.values())u();subs.clear();shared.clear();cb=null}
@@ -422,11 +432,11 @@ async function firebaseStore(code){
     subMembers(f){return fs.onSnapshot(col,{includeMetadataChanges:true},snap=>{
       setLive(!snap.metadata.fromCache);f(snap.docs.map(d=>Object.assign({id:d.id},d.data())));
     },err=>{toast("同步出错："+(err.code||"请检查 Firebase 设置"));setLive(false)})},
-    async saveMember(m){const{id,...data}=m;data.updatedAt=Date.now();await fs.setDoc(fs.doc(col,id),data)},
+    async saveMember(m,withKey){const{id,key,...data}=m;if(withKey&&key)data.key=key;data.updatedAt=Date.now();await fs.setDoc(fs.doc(col,id),data)},
     removeMember:id=>fs.deleteDoc(fs.doc(col,id)),
     subShared(k,f){return fs.onSnapshot(sdoc(k),s=>f(s.exists()?s.data():null),()=>f(null))},
     async getShared(k){const s=await fs.getDoc(sdoc(k));return s.exists()?s.data():null},
-    setShared:(k,d)=>fs.setDoc(sdoc(k),{busy:d.busy,updatedAt:Date.now()})
+    setShared:(k,d)=>fs.setDoc(sdoc(k),{name:"s",color:"#000000",busy:d.busy,updatedAt:Date.now()})
   });
 }
 function setLive(on){$("#live").classList.toggle("on",on);$("#liveText").textContent=on?"· 已同步":"· 离线"}
@@ -836,7 +846,7 @@ $("#keyCopy").onclick=async()=>{
 $("#keyNew").onclick=()=>{if(!editing)return;editing.key=newKey();$("#keyInput").value=editing.key;toast("已换新 key，保存后就和原来的课表断开互通了")};
 function openEditor(m,geo){
   if(!m.key)m.key=newKey();
-  editing=m;$("#keyInput").value=m.key;$("#nameInput").value=m.name||"";renderAva();$("#courseInput").value="";
+  editing=m;$("#keyInput").value=m.key;$("#keyWarn").hidden=!(store&&store.keysBlocked&&store.keysBlocked());$("#nameInput").value=m.name||"";renderAva();$("#courseInput").value="";
   $("#sheetTitle").textContent=m.isNew?"核对课表":"编辑课表";
   if(geo){scanUrl=geo.url;playScan(geo)}else $("#scanBox").hidden=true;
   renderEditor();$("#sheet").classList.add("open");$("#sheet .sheet").scrollTop=0;
@@ -874,7 +884,7 @@ $("#doneBtn").onclick=async()=>{
   if(!name){toast("先填一个名字");$("#nameInput").focus();return}
   const data={id:m.id,name,color:m.color||"#000000",busy:m.busy,key:m.key};if(m.avatar)data.avatar=m.avatar;
   closeSheet();
-  try{await store.save(data);toast("已保存")}catch(e){toast(e.shared?"已保存，但互通同步失败："+(e.code||e.message):"保存失败："+(e.code||e.message))}
+  try{const r=await store.save(data);toast(r==="nokey"?"已保存。但 Firestore 规则不允许 key 字段，课表互通暂不可用":"已保存")}catch(e){toast(e.shared?"已保存，但互通同步失败："+(e.code||e.message):"保存失败："+(e.code||e.message))}
 };
 $("#cancelBtn").onclick=closeSheet;
 
